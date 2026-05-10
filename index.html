@@ -245,7 +245,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <div class="hdr-right">
     <div class="hdr-stats">
       <div class="hdr-stat"><strong id="hs-total">0</strong>Total</div>
-      <div class="hdr-stat"><strong id="hs-study">0</strong>Studying</div>
       <div class="hdr-stat"><strong id="hs-ok">0</strong>Memorized</div>
     </div>
     <div class="user-avatar" id="user-avatar" title=""></div>
@@ -255,7 +254,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 <div class="nav">
   <div class="nav-tab active" id="tab-all" onclick="switchPage('all',this)">📖 All Vocabulary <span class="badge" id="badge-all">0</span></div>
-  <div class="nav-tab" id="tab-study" onclick="switchPage('study',this)">🎯 Studying List <span class="badge" id="badge-study">0</span></div>
+
   <div class="nav-tab" id="tab-flash" onclick="switchPage('flash',this)">🃏 Flashcards</div>
 </div>
 
@@ -276,15 +275,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
         <input class="search-input" id="search-input" type="text" placeholder="Search words..." oninput="onSearch(this.value)">
       </div>
     </div>
-    <div class="remark-add-wrap" id="remark-add-wrap">
-      <button class="btn btn-outline" onclick="toggleRemarkDrop()">🎯 Add to Study ▾</button>
-      <div class="remark-drop" id="remark-drop">
-        <button class="remark-drop-item" onclick="addToStudyByRemark('partial')"><span class="drop-badge" style="background:#fef3c7;color:#92400e">~ Partial</span>Partially Remembered</button>
-        <button class="remark-drop-item" onclick="addToStudyByRemark('no')"><span class="drop-badge" style="background:#fee2e2;color:#991b1b">✗ No</span>Not Yet</button>
-        <div class="remark-drop-sep"></div>
-        <button class="remark-drop-item" onclick="addToStudyByRemark('none')"><span class="drop-badge" style="background:#f1f5f9;color:#64748b">— </span>Not Set</button>
-      </div>
-    </div>
+
     <button class="btn btn-outline" id="select-btn" onclick="toggleSelectMode()">☐ Select</button>
     <div class="gen-group">
       <select id="gen-count"><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option><option>50</option></select>
@@ -301,28 +292,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </div>
   </div>
   <div class="filter-row">
-    <span class="pill active" onclick="setFilter('all',this)">All</span>
-    <span class="pill p-ok" onclick="setFilter('ok',this)">✓ Memorized</span>
-    <span class="pill p-partial" onclick="setFilter('partial',this)">~ Partially Remembered</span>
-    <span class="pill p-no" onclick="setFilter('no',this)">✗ Not Yet</span>
-    <span class="pill" onclick="setFilter('none',this)">— Not Set</span>
+    <span class="pill active" id="pill-all" onclick="toggleFilter('all',this)">All</span>
+    <span class="pill p-ok" onclick="toggleFilter('ok',this)">✓ Memorized</span>
+    <span class="pill p-partial" onclick="toggleFilter('partial',this)">~ Partially Remembered</span>
+    <span class="pill p-no" onclick="toggleFilter('no',this)">✗ Not Yet</span>
+    <span class="pill" onclick="toggleFilter('none',this)">— Not Set</span>
   </div>
   <div class="words-grid" id="all-grid"></div>
 </div>
 
-<!-- PAGE 2 -->
-<div id="page-study" class="page">
-  <div class="study-header">
-    <span style="font-weight:700;font-size:1rem">🎯 Currently Studying — <span id="study-count">0</span> words</span>
-    <button class="btn btn-outline btn-sm" onclick="toggleSelector()">＋ Add / Remove Words</button>
-    <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" onclick="clearMemorizedFromStudy()">✓ Clear Memorized</button>
-  </div>
-  <div class="study-selector" id="study-selector" style="display:none">
-    <h3>Click word chips to add or remove from your studying list</h3>
-    <div class="chips-wrap" id="word-chips"></div>
-  </div>
-  <div class="study-grid" id="study-grid"></div>
-</div>
 
 <!-- PAGE 3 -->
 <div id="page-flash" class="page">
@@ -609,7 +587,7 @@ DB.forEach(d => { DB_MAP[d.w.toLowerCase()] = d; });
 let currentUser = null;
 let allWords = [];
 let studyList = [];
-let currentFilter = 'all';
+let selectedFilters = new Set();
 let searchQ = '';
 let editingId = null;
 let remarkTargetId = null;
@@ -677,7 +655,7 @@ async function onLogin(user) {
   await loadData();
   showLoading(false);
   subscribeRealtime();
-  renderAll(); renderStudy(); updateStats();
+  renderAll(); updateStats();
 }
 
 function onLogout() {
@@ -748,7 +726,7 @@ function onRemoteChange() {
   if (localOp) return;
   clearTimeout(reloadTimer);
   reloadTimer = setTimeout(async () => {
-    await loadData(); renderAll(); renderStudy(); updateStats();
+    await loadData(); renderAll(); updateStats();
   }, 600);
 }
 
@@ -782,7 +760,7 @@ async function saveWord() {
     else { toast('Error: ' + error.message); }
   }
   showLoading(false); localOp = false;
-  closeModal('modal-word'); renderAll(); renderStudy(); updateStats();
+  closeModal('modal-word'); renderAll(); updateStats();
 }
 
 async function deleteWord(id) {
@@ -793,7 +771,7 @@ async function deleteWord(id) {
   studyList = studyList.filter(s => s !== id);
   selectedIds.delete(id);
   showLoading(false); localOp = false;
-  renderAll(); renderStudy(); updateStats(); toast('🗑️ Word deleted');
+  renderAll(); updateStats(); toast('🗑️ Word deleted');
 }
 
 async function deleteSelected() {
@@ -806,7 +784,7 @@ async function deleteSelected() {
   studyList = studyList.filter(s => !selectedIds.has(s));
   selectedIds.clear();
   showLoading(false); localOp = false;
-  toggleSelectMode(); renderAll(); renderStudy(); updateStats();
+  toggleSelectMode(); renderAll(); updateStats();
   toast(`🗑️ ${ids.length} words deleted`);
 }
 
@@ -820,7 +798,7 @@ async function toggleStudy(id) {
     await sb.from('study_list').insert({ user_id: currentUser.id, word_id: id, position: studyList.length });
     studyList.push(id);
   }
-  localOp = false; renderAll(); renderStudy(); updateStats(); renderChips();
+  localOp = false; renderAll(); updateStats(); renderChips();
 }
 
 async function clearMemorizedFromStudy() {
@@ -860,7 +838,7 @@ async function setRemark(r) {
   if (w) {
     localOp = true; w.remark = r;
     await sb.from('words').update({ remark: r }).eq('id', remarkTargetId);
-    localOp = false; renderAll(); renderStudy(); updateStats();
+    localOp = false; renderAll(); updateStats();
   }
   closeModal('modal-remark');
 }
@@ -893,7 +871,7 @@ async function confirmGenerate() {
     toast(`✨ Added ${newWords.length} words!`);
   } else if (error) { toast('Error: ' + error.message); }
   showLoading(false); localOp = false;
-  closeModal('modal-gen'); renderAll(); renderStudy(); updateStats();
+  closeModal('modal-gen'); renderAll(); updateStats();
 }
 
 // ── BULK SELECT ───────────────────────────────────────────────────
@@ -997,9 +975,6 @@ function renderWordCard(w, withDrag=false) {
         <button class="remark-btn ${remarkClass(w.remark)}" onclick="openRemarkModal('${w.id}')">${remarkLabel(w.remark)}</button>
         <div class="action-row">
           <button class="btn btn-ghost btn-icon" title="Edit" onclick="openEditModal('${w.id}');event.stopPropagation()">✏️</button>
-          ${withDrag
-            ?`<button class="btn btn-ghost btn-icon" title="Remove from study" onclick="toggleStudy('${w.id}')">✕</button>`
-            :`<button class="btn btn-ghost btn-icon" title="${inStudy?'In study list':'Add to study'}" onclick="toggleStudy('${w.id}');event.stopPropagation()" style="color:${inStudy?'var(--success)':'var(--muted)'}">🎯</button>`}
           <button class="btn btn-ghost btn-icon" title="Delete" onclick="deleteWord('${w.id}');event.stopPropagation()">🗑️</button>
         </div>
       </div>
@@ -1018,15 +993,28 @@ function toggleExpand(btn){const e=btn.nextElementSibling;const o=e.classList.to
 
 // ── SEARCH & FILTER ───────────────────────────────────────────────
 function onSearch(q){searchQ=q.toLowerCase();renderAll();}
-function setFilter(f,el){currentFilter=f;document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderAll();}
+function toggleFilter(f,el){
+  if(f==='all'){
+    selectedFilters.clear();
+    document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+    document.getElementById('pill-all').classList.add('active');
+  }else{
+    document.getElementById('pill-all').classList.remove('active');
+    if(selectedFilters.has(f)){selectedFilters.delete(f);el.classList.remove('active');}
+    else{selectedFilters.add(f);el.classList.add('active');}
+    if(selectedFilters.size===0)document.getElementById('pill-all').classList.add('active');
+  }
+  renderAll();
+}
 function filterWords(){
   return allWords.filter(w=>{
     if(searchQ){const h=[w.word,w.meaningTH,w.pos,w.synonyms,w.antonyms,w.example].join(' ').toLowerCase();if(!h.includes(searchQ))return false;}
-    if(currentFilter==='ok')return w.remark==='ok';
-    if(currentFilter==='partial')return w.remark==='partial';
-    if(currentFilter==='no')return w.remark==='no';
-    if(currentFilter==='none')return!w.remark;
-    return true;
+    if(selectedFilters.size===0)return true;
+    if(selectedFilters.has('ok')&&w.remark==='ok')return true;
+    if(selectedFilters.has('partial')&&w.remark==='partial')return true;
+    if(selectedFilters.has('no')&&w.remark==='no')return true;
+    if(selectedFilters.has('none')&&!w.remark)return true;
+    return false;
   });
 }
 
@@ -1053,7 +1041,6 @@ function updateStats(){
   document.getElementById('s-partial').textContent=partial;
   document.getElementById('s-no').textContent=no;
   document.getElementById('hs-total').textContent=allWords.length;
-  document.getElementById('hs-study').textContent=studyList.length;
   document.getElementById('hs-ok').textContent=ok;
   document.getElementById('badge-all').textContent=allWords.length;
   document.getElementById('badge-study').textContent=studyList.length;
@@ -1072,7 +1059,6 @@ function switchPage(name,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active'); el.classList.add('active');
-  if(name==='study'){renderStudy();renderChips();}
   if(name==='flash'){document.getElementById('flash-info').textContent=allWords.length?`${allWords.length} words available`:'No vocabulary yet';}
 }
 
