@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulary Master — Cloud</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--primary:#4f46e5;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--radius:10px;--shadow:0 1px 3px rgba(0,0,0,.1);--shadow-lg:0 4px 12px rgba(0,0,0,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+/* AUTH */
+.auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.auth-card{background:#fff;border-radius:18px;padding:36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.auth-logo{font-size:2.5rem;text-align:center;margin-bottom:8px}
+.auth-title{font-size:1.5rem;font-weight:800;text-align:center;color:var(--primary);margin-bottom:4px}
+.auth-sub{font-size:.85rem;text-align:center;color:var(--muted);margin-bottom:20px}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.auth-tab{flex:1;padding:10px;border:none;background:none;cursor:pointer;font-size:.875rem;font-weight:600;color:var(--muted);transition:.2s}
+.auth-tab.active{background:var(--primary);color:#fff}
+.auth-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.auth-fg label{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.auth-fg input{padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;outline:none;transition:.2s}
+.auth-fg input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+.auth-error{font-size:.82rem;padding:8px 12px;border-radius:8px;margin-bottom:12px;display:none}
+.auth-error.err{background:#fee2e2;color:#991b1b}
+.auth-error.ok{background:#d1fae5;color:#065f46}
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:150}
+.loading-spin{font-size:2.5rem;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{margin-top:12px;font-size:.9rem;color:var(--muted);font-weight:600}
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(79,70,229,.4)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.hdr-title{font-size:1.25rem;font-weight:800}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:.3s}
+.sync-dot.online{background:#34d399}
+.sync-dot.offline{background:#f87171;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hdr-right{display:flex;align-items:center;gap:12px;font-size:.8rem}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800;border:2px solid rgba(255,255,255,.45);flex-shrink:0;letter-spacing:.5px;cursor:default;transition:.2s}.user-avatar:hover{background:rgba(255,255,255,.32)}
+.hdr-stats{display:flex;gap:14px}
+.hdr-stat{text-align:center;opacity:.9}
+.hdr-stat strong{display:block;font-size:1rem;font-weight:700}
+.btn-logout{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600;transition:.2s}
+.btn-logout:hover{background:rgba(255,255,255,.3)}
+/* NAV */
+.nav{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 24px;position:sticky;top:0;z-index:50}
+.nav-tab{padding:12px 20px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:.2s;font-size:.875rem;display:flex;align-items:center;gap:6px}
+.nav-tab:hover{color:var(--primary)}
+.nav-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.nav-tab .badge{background:var(--primary);color:#fff;font-size:.68rem;padding:1px 7px;border-radius:20px;font-weight:700}
+/* MAIN */
+.main{max-width:1440px;margin:0 auto;padding:20px 24px}
+.page{display:none}.page.active{display:block}
+/* TOOLBAR */
+.toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.toolbar-left{display:flex;gap:10px;flex:1;flex-wrap:wrap;min-width:0}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);width:16px;height:16px}
+.search-input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:var(--radius);font-size:.875rem;outline:none;transition:.2s;background:#fff}
+.search-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+/* BUTTONS */
+.btn{padding:9px 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:.85rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.2s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#4338ca}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#059669}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-ghost{background:transparent;color:var(--muted);padding:6px 8px}.btn-ghost:hover{background:var(--bg);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:.78rem}.btn-icon{padding:6px;width:30px;height:30px;border-radius:8px}
+.btn-select-active{background:#7c3aed;color:#fff;border-color:#7c3aed}.btn-select-active:hover{background:#6d28d9}
+.gen-group{display:flex;align-items:center}
+.gen-group .btn{border-radius:0 var(--radius) var(--radius) 0}
+.gen-group select{padding:9px 10px;border:1px solid var(--border);border-right:none;border-radius:var(--radius) 0 0 var(--radius);font-size:.85rem;outline:none;background:#fff;font-weight:600}
+/* STATS */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;text-align:center;border-top:3px solid var(--border)}
+.stat-card.all{border-top-color:var(--primary)}.stat-card.ok{border-top-color:var(--success)}.stat-card.partial{border-top-color:var(--warning)}.stat-card.no{border-top-color:var(--danger)}
+.stat-num{font-size:1.6rem;font-weight:800;line-height:1}.stat-lbl{font-size:.72rem;color:var(--muted);margin-top:3px}
+/* FILTER */
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.pill{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:.8rem;font-weight:500;transition:.2s}
+.pill:hover{border-color:var(--primary);color:var(--primary)}
+.pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pill.p-ok.active{background:var(--success);border-color:var(--success)}
+.pill.p-partial.active{background:var(--warning);border-color:var(--warning)}
+.pill.p-no.active{background:var(--danger);border-color:var(--danger)}
+/* GRID */
+.words-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+/* WORD CARD */
+.wcard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);transition:box-shadow .2s,border-color .2s;border-left:4px solid var(--border);position:relative}
+.wcard:hover{box-shadow:var(--shadow-lg)}
+.wcard.r-ok{border-left-color:var(--success)}.wcard.r-partial{border-left-color:var(--warning)}.wcard.r-no{border-left-color:var(--danger)}
+.wcard.selectable{cursor:pointer}.wcard.selectable:hover{border-color:#a78bfa}
+.wcard.selected{border-color:var(--primary);background:#f5f3ff;border-left-color:var(--primary)}
+.select-check{position:absolute;top:12px;left:12px;width:20px;height:20px;border:2px solid var(--border);border-radius:5px;background:#fff;display:none;align-items:center;justify-content:center;font-size:.9rem;z-index:5}
+.selectable .select-check{display:flex}.selected .select-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.wcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.wcard-info{flex:1;min-width:0}
+.word-title{font-size:1.35rem;font-weight:800;color:var(--primary);line-height:1}
+.word-pos{font-size:.75rem;color:var(--muted);font-style:italic;margin-left:6px}
+.word-vf{font-size:.78rem;color:#7c3aed;margin-top:3px;font-family:monospace}
+.word-pron{font-size:.8rem;color:var(--muted);margin-top:2px}
+.word-pron-th{font-size:.8rem;color:#0ea5e9;margin-top:1px}
+.word-meaning{font-size:.95rem;font-weight:700;color:var(--text);margin-top:6px}
+.wcard-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.action-row{display:flex;gap:4px}
+.remark-btn{font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:20px;border:none;cursor:pointer;transition:.2s}
+.remark-none{background:#f1f5f9;color:var(--muted)}.remark-ok{background:#d1fae5;color:#065f46}
+.remark-partial{background:#fef3c7;color:#92400e}.remark-no{background:#fee2e2;color:#991b1b}
+.wcard-expand{display:none;margin-top:14px;padding-top:14px;border-top:2px solid #e0e7ff}
+.wcard-expand.open{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.detail-item{font-size:.83rem}.detail-item.full{grid-column:1/-1}
+.detail-label{display:inline-block;font-weight:700;color:#4338ca;font-size:.68rem;text-transform:uppercase;letter-spacing:.6px;background:#ede9fe;padding:2px 8px;border-radius:20px;margin-bottom:4px}
+.detail-value{color:#334155;line-height:1.5;padding-left:2px}
+.expand-btn{background:none;border:none;color:#818cf8;cursor:pointer;font-size:.78rem;margin-top:10px;display:flex;align-items:center;gap:4px;padding:2px 0;font-weight:600}
+.expand-btn:hover{color:var(--primary)}
+.speak-btn{background:none;border:none;cursor:pointer;font-size:.95rem;padding:2px 5px;border-radius:6px;opacity:.55;transition:.15s;flex-shrink:0;line-height:1}
+.speak-btn:hover{background:rgba(79,70,229,.12);opacity:1}
+.vf-grid{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.vf-cell{display:flex;flex-direction:column;gap:1px}
+/* BULK BAR */
+.bulk-bar{display:none;background:#7c3aed;color:#fff;padding:10px 16px;border-radius:var(--radius);margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px}
+.bulk-bar.visible{display:flex}
+/* REMARK DROPDOWN */
+.remark-add-wrap{position:relative}
+.remark-drop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:30;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px;min-width:230px;box-shadow:var(--shadow-lg)}
+.remark-drop.open{display:block}
+.remark-drop-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;background:none;cursor:pointer;font-size:.85rem;font-weight:500;border-radius:8px;text-align:left;transition:.15s;color:var(--text)}
+.remark-drop-item:hover{background:var(--bg)}
+.drop-badge{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0}
+.remark-drop-sep{height:1px;background:var(--border);margin:4px 0}
+/* STUDY PAGE */
+.study-header{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.study-selector{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px}
+.study-selector h3{font-size:.9rem;font-weight:700;margin-bottom:10px}
+.chips-wrap{display:flex;flex-wrap:wrap;gap:7px;max-height:150px;overflow-y:auto}
+.chip{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:.82rem;font-weight:500;transition:.2s;user-select:none}
+.chip:hover{border-color:var(--primary);color:var(--primary)}
+.chip.in-study{background:var(--primary);color:#fff;border-color:var(--primary)}
+.study-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+.study-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);transition:all .2s;cursor:grab;position:relative;border-left:4px solid var(--border)}
+.study-card.r-ok{border-left-color:var(--success)}.study-card.r-partial{border-left-color:var(--warning)}.study-card.r-no{border-left-color:var(--danger)}
+.study-card.dragging{opacity:.4;transform:scale(.98)}.study-card.drag-over{border-color:var(--primary);border-style:dashed;background:#f5f3ff}
+.drag-handle{color:#cbd5e1;margin-right:8px;cursor:grab;font-size:1rem}
+/* FLASHCARDS */
+.flash-toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.flash-info{font-size:.85rem;color:var(--muted)}
+.flashcard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.flashcard{perspective:1000px;cursor:pointer;height:200px;user-select:none}
+.flashcard-inner{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+.flashcard.flipped .flashcard-inner{transform:rotateY(180deg)}
+.fc-front,.fc-back{position:absolute;inset:0;border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.fc-front{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 4px 14px rgba(79,70,229,.35)}
+.fc-back{background:#fff;border:1px solid var(--border);transform:rotateY(180deg);box-shadow:var(--shadow-lg);justify-content:flex-start;padding:16px 18px;overflow-y:auto}
+.fc-word{font-size:1.7rem;font-weight:800;line-height:1.1}.fc-pos{font-size:.78rem;opacity:.75;font-style:italic;margin-top:5px}
+.fc-hint{font-size:.72rem;opacity:.55;margin-top:12px;border:1px solid rgba(255,255,255,.4);padding:3px 10px;border-radius:20px}
+.fc-back-word{font-size:1.25rem;font-weight:800;color:var(--primary);margin-bottom:8px;align-self:flex-start}
+.fc-pron-en{font-size:.82rem;color:var(--muted);font-family:monospace;align-self:flex-start}
+.fc-pron-th{font-size:.82rem;color:#0ea5e9;align-self:flex-start;margin-top:1px}
+.fc-meaning{font-size:.9rem;font-weight:700;color:var(--text);margin-top:8px;align-self:flex-start}
+.fc-example{font-size:.78rem;color:var(--muted);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);align-self:flex-start;line-height:1.5}
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:12px}
+/* AUTOFILL */
+.autofill-hint{font-size:.75rem;margin-top:4px;padding:4px 10px;border-radius:6px;display:none}
+.autofill-hint.found{background:#d1fae5;color:#065f46;display:block}
+.autofill-hint.custom{background:#fef3c7;color:#92400e;display:block}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-title{font-size:1.15rem;font-weight:800}
+.modal-close{background:none;border:none;cursor:pointer;font-size:1.4rem;color:var(--muted);line-height:1;padding:4px 8px;border-radius:8px}
+.modal-close:hover{background:var(--bg)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:4px}.fg.full{grid-column:1/-1}
+.fg label{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;outline:none;font-family:inherit;transition:.2s;background:#fff}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.fg textarea{resize:vertical;min-height:56px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.remark-picker{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.rp-opt{padding:5px 14px;border-radius:20px;border:2px solid transparent;cursor:pointer;font-size:.78rem;font-weight:600;transition:.2s}
+.rp-ok{background:#d1fae5;color:#065f46}.rp-ok.sel{border-color:#065f46}
+.rp-partial{background:#fef3c7;color:#92400e}.rp-partial.sel{border-color:#92400e}
+.rp-no{background:#fee2e2;color:#991b1b}.rp-no.sel{border-color:#991b1b}
+.gen-preview{margin-top:16px}
+.gen-preview h4{font-size:.85rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
+.preview-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{padding:4px 12px;border-radius:20px;background:#ede9fe;color:var(--primary);font-size:.82rem;font-weight:600}
+.gen-avail{font-size:.82rem;color:var(--muted);margin-bottom:12px}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:.85rem;z-index:200;box-shadow:var(--shadow-lg);animation:toast-in .3s ease}
+@keyframes toast-in{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+@media(max-width:600px){.form-grid,.detail-grid{grid-template-columns:1fr}.stats-bar{grid-template-columns:repeat(2,1fr)}.words-grid,.study-grid{grid-template-columns:1fr}.main{padding:14px 12px}.hdr-stats{display:none}}
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">📚</div>
+    <h1 class="auth-title">Vocabulary Master</h1>
+    <p class="auth-sub">Sign in to sync your vocabulary across all devices</p>
+    <div id="auth-mode" data-mode="login">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-m="login" onclick="switchAuth('login')">Sign In</button>
+        <button class="auth-tab" data-m="signup" onclick="switchAuth('signup')">Sign Up</button>
+      </div>
+      <div class="auth-fg">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div class="auth-fg">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="Minimum 6 characters" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div id="auth-error" class="auth-error err"></div>
+      <button id="auth-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="authSubmit()">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-spin">⟳</div>
+  <div id="loading-msg" class="loading-msg">Syncing...</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-title">📚 Vocabulary Master</div>
+    <div class="sync-dot offline" id="sync-dot" title="Realtime sync status"></div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-stats">
+      <div class="hdr-stat"><strong id="hs-total">0</strong>Total</div>
+      <div class="hdr-stat"><strong id="hs-study">0</strong>Studying</div>
+      <div class="hdr-stat"><strong id="hs-ok">0</strong>Memorized</div>
+    </div>
+    <div class="user-avatar" id="user-avatar" title=""></div>
+    <button class="btn-logout" onclick="signOut()">Sign Out</button>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-tab active" id="tab-all" onclick="switchPage('all',this)">📖 All Vocabulary <span class="badge" id="badge-all">0</span></div>
+  <div class="nav-tab" id="tab-study" onclick="switchPage('study',this)">🎯 Studying List <span class="badge" id="badge-study">0</span></div>
+  <div class="nav-tab" id="tab-flash" onclick="switchPage('flash',this)">🃏 Flashcards</div>
+</div>
+
+<div class="main">
+
+<!-- PAGE 1 -->
+<div id="page-all" class="page active">
+  <div class="stats-bar">
+    <div class="stat-card all"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total Words</div></div>
+    <div class="stat-card ok"><div class="stat-num" id="s-ok">0</div><div class="stat-lbl">Memorized</div></div>
+    <div class="stat-card partial"><div class="stat-num" id="s-partial">0</div><div class="stat-lbl">Partially Remembered</div></div>
+    <div class="stat-card no"><div class="stat-num" id="s-no">0</div><div class="stat-lbl">Not Yet</div></div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" id="search-input" type="text" placeholder="Search words..." oninput="onSearch(this.value)">
+      </div>
+    </div>
+    <div class="remark-add-wrap" id="remark-add-wrap">
+      <button class="btn btn-outline" onclick="toggleRemarkDrop()">🎯 Add to Study ▾</button>
+      <div class="remark-drop" id="remark-drop">
+        <button class="remark-drop-item" onclick="addToStudyByRemark('partial')"><span class="drop-badge" style="background:#fef3c7;color:#92400e">~ Partial</span>Partially Remembered</button>
+        <button class="remark-drop-item" onclick="addToStudyByRemark('no')"><span class="drop-badge" style="background:#fee2e2;color:#991b1b">✗ No</span>Not Yet</button>
+        <div class="remark-drop-sep"></div>
+        <button class="remark-drop-item" onclick="addToStudyByRemark('none')"><span class="drop-badge" style="background:#f1f5f9;color:#64748b">— </span>Not Set</button>
+      </div>
+    </div>
+    <button class="btn btn-outline" id="select-btn" onclick="toggleSelectMode()">☐ Select</button>
+    <div class="gen-group">
+      <select id="gen-count"><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option><option>50</option></select>
+      <button class="btn btn-success" onclick="openGenModal()">✨ Generate</button>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ Add Word</button>
+  </div>
+  <div class="bulk-bar" id="bulk-bar">
+    <span style="font-size:.875rem;font-weight:600">☑ <span id="sel-count">0</span> word(s) selected</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" style="background:#fff;color:#5b21b6;border:1px solid #fff;font-weight:700" onclick="selectAll()">Select All</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.6);font-weight:700" onclick="deselectAll()">Deselect All</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSelected()">🗑️ Delete Selected</button>
+    </div>
+  </div>
+  <div class="filter-row">
+    <span class="pill active" onclick="setFilter('all',this)">All</span>
+    <span class="pill p-ok" onclick="setFilter('ok',this)">✓ Memorized</span>
+    <span class="pill p-partial" onclick="setFilter('partial',this)">~ Partially Remembered</span>
+    <span class="pill p-no" onclick="setFilter('no',this)">✗ Not Yet</span>
+    <span class="pill" onclick="setFilter('none',this)">— Not Set</span>
+  </div>
+  <div class="words-grid" id="all-grid"></div>
+</div>
+
+<!-- PAGE 2 -->
+<div id="page-study" class="page">
+  <div class="study-header">
+    <span style="font-weight:700;font-size:1rem">🎯 Currently Studying — <span id="study-count">0</span> words</span>
+    <button class="btn btn-outline btn-sm" onclick="toggleSelector()">＋ Add / Remove Words</button>
+    <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5" onclick="clearMemorizedFromStudy()">✓ Clear Memorized</button>
+  </div>
+  <div class="study-selector" id="study-selector" style="display:none">
+    <h3>Click word chips to add or remove from your studying list</h3>
+    <div class="chips-wrap" id="word-chips"></div>
+  </div>
+  <div class="study-grid" id="study-grid"></div>
+</div>
+
+<!-- PAGE 3 -->
+<div id="page-flash" class="page">
+  <div class="flash-toolbar">
+    <div class="gen-group">
+      <select id="flash-count"><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option><option>50</option></select>
+      <button class="btn btn-primary" onclick="randomFlash()">🎲 Random</button>
+    </div>
+    <button class="btn btn-outline" onclick="clearFlash()">✕ Clear All</button>
+    <span class="flash-info" id="flash-info"></span>
+  </div>
+  <div class="flashcard-grid" id="flash-grid">
+    <div class="empty" style="grid-column:1/-1"><div class="empty-icon">🃏</div><p>Click <strong>Random</strong> to draw flashcards from your vocabulary.</p></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- MODAL: ADD/EDIT -->
+<div class="overlay" id="modal-word">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title" id="modal-word-title">Add New Word</div><button class="modal-close" onclick="closeModal('modal-word')">✕</button></div>
+    <div class="form-grid">
+      <div class="fg full"><label>Word *</label><input id="f-word" type="text" placeholder="Type a word — auto-fills if in database" oninput="autoFill(this.value)"><div class="autofill-hint" id="autofill-hint"></div></div>
+      <div class="fg"><label>Part of Speech</label><select id="f-pos"><option value="">— select —</option><option>verb</option><option>noun</option><option>adjective</option><option>adverb</option><option>verb/noun</option><option>adjective/noun</option><option>verb/adj</option><option>phrasal verb</option></select></div>
+      <div class="fg"><label>Verb Forms</label><input id="f-vf" type="text" placeholder="base / past / past participle"></div>
+      <div class="fg"><label>Pronunciation (EN)</label><input id="f-pen" type="text" placeholder="/IPA/"></div>
+      <div class="fg"><label>Pronunciation (TH)</label><input id="f-pth" type="text" placeholder="TH reading"></div>
+      <div class="fg full"><label>Meaning (TH) *</label><input id="f-mth" type="text" placeholder="ความหมายภาษาไทย"></div>
+      <div class="fg full"><label>Collocations</label><input id="f-col" type="text"></div>
+      <div class="fg"><label>Usage</label><input id="f-usage" type="text" placeholder="formal/informal"></div>
+      <div class="fg"><label>Grammar Behavior</label><input id="f-gram" type="text"></div>
+      <div class="fg full"><label>Example Sentences</label><textarea id="f-ex"></textarea></div>
+      <div class="fg"><label>Synonyms</label><input id="f-syn" type="text"></div>
+      <div class="fg"><label>Antonyms</label><input id="f-ant" type="text"></div>
+      <div class="fg full"><label>Remark</label>
+        <div class="remark-picker" id="remark-picker">
+          <span class="rp-opt rp-ok" onclick="selectRemark('ok',this)">✓ Memorized</span>
+          <span class="rp-opt rp-partial" onclick="selectRemark('partial',this)">~ Partially Remembered</span>
+          <span class="rp-opt rp-no" onclick="selectRemark('no',this)">✗ Not Yet</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-word')">Cancel</button><button class="btn btn-primary" onclick="saveWord()">Save Word</button></div>
+  </div>
+</div>
+
+<!-- MODAL: GENERATE -->
+<div class="overlay" id="modal-gen">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr"><div class="modal-title">✨ Generate New Words</div><button class="modal-close" onclick="closeModal('modal-gen')">✕</button></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+      <label style="font-weight:700">Number of words:</label>
+      <input type="number" id="gen-num" value="10" min="1" max="100" style="width:80px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:1rem;font-weight:700;text-align:center;outline:none" oninput="previewGen()">
+    </div>
+    <div class="gen-avail" id="gen-avail-msg"></div>
+    <div class="gen-preview"><h4>Preview — words to be added</h4><div class="preview-chips" id="gen-preview-chips"></div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-gen')">Cancel</button><button class="btn btn-success" onclick="confirmGenerate()">✨ Add These Words</button></div>
+  </div>
+</div>
+
+<!-- MODAL: REMARK -->
+<div class="overlay" id="modal-remark">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hdr"><div class="modal-title" id="remark-word-label">Set Remark</div><button class="modal-close" onclick="closeModal('modal-remark')">✕</button></div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+      <button class="btn" style="background:#d1fae5;color:#065f46;font-size:.95rem" onclick="setRemark('ok')">✓ Memorized</button>
+      <button class="btn" style="background:#fef3c7;color:#92400e;font-size:.95rem" onclick="setRemark('partial')">~ Partially Remembered</button>
+      <button class="btn" style="background:#fee2e2;color:#991b1b;font-size:.95rem" onclick="setRemark('no')">✗ Not Yet</button>
+      <button class="btn btn-ghost" onclick="setRemark('')">— Clear Remark</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Supabase ────────────────────────────────────────────────────
+const SUPA_URL = 'https://spjsbgyuslbxtpxusvxx.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwanNiZ3l1c2xieHRweHVzdnh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDU2NzIsImV4cCI6MjA5MzkyMTY3Mn0.cSKc9DDX91c5DfVHUAFMeDMSBCU9X8ZKwCLc_yVKGf4';
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+// ── Pre-built Word DB (for Generate) ───────────────────────────
+const DB = [
+{w:"accept",p:"verb",vf:"accept / accepted / accepted",en:"/əkˈsɛpt/",th:"แอค-เซ็พท์ / แอค-เซ็พ-เทด / แอค-เซ็พ-เทด",m:"ยอมรับ, รับ",c:"accept an offer, accept responsibility",u:"formal/informal",ex:"She accepted the job offer.",g:"transitive verb",sy:"receive, agree to, take",an:"reject, refuse, decline",f:1},
+{w:"achieve",p:"verb",vf:"achieve / achieved / achieved",en:"/əˈtʃiːv/",th:"อะ-ชีฟ / อะ-ชีฟด์ / อะ-ชีฟด์",m:"บรรลุ, ทำสำเร็จ",c:"achieve a goal, achieve success",u:"formal",ex:"He achieved his dream of becoming a pilot.",g:"transitive verb",sy:"accomplish, attain, reach",an:"fail, miss",f:1},
+{w:"agree",p:"verb",vf:"agree / agreed / agreed",en:"/əˈɡriː/",th:"อะ-กรี / อะ-กรีด / อะ-กรีด",m:"เห็นด้วย, ตกลง",c:"agree with someone, agree on a plan",u:"formal/informal",ex:"We all agreed to meet at noon.",g:"intransitive verb + with/on",sy:"consent, concur, approve",an:"disagree, refuse, object",f:1},
+{w:"allow",p:"verb",vf:"allow / allowed / allowed",en:"/əˈlaʊ/",th:"อะ-เลา / อะ-เลาด์ / อะ-เลาด์",m:"อนุญาต, ยอมให้",c:"allow access, allow time",u:"formal/informal",ex:"The teacher allowed us to work in groups.",g:"transitive verb",sy:"permit, let, authorize",an:"forbid, ban, prevent",f:1},
+{w:"appear",p:"verb",vf:"appear / appeared / appeared",en:"/əˈpɪər/",th:"อะ-เพียร์ / อะ-เพียร์ด / อะ-เพียร์ด",m:"ปรากฏ, ดูเหมือน",c:"appear suddenly, appear confident",u:"formal/informal",ex:"A solution appeared out of nowhere.",g:"intransitive / linking verb",sy:"emerge, seem, show up",an:"disappear, vanish",f:1},
+{w:"ask",p:"verb",vf:"ask / asked / asked",en:"/æsk/",th:"แอสค์ / แอสค์ท / แอสค์ท",m:"ถาม, ขอร้อง",c:"ask a question, ask for help",u:"informal",ex:"Can I ask you something?",g:"transitive verb",sy:"inquire, request, question",an:"answer, reply",f:1},
+{w:"avoid",p:"verb",vf:"avoid / avoided / avoided",en:"/əˈvɔɪd/",th:"อะ-วอยด์ / อะ-วอย-เดด / อะ-วอย-เดด",m:"หลีกเลี่ยง",c:"avoid trouble, avoid mistakes",u:"formal/informal",ex:"She avoided eye contact with him.",g:"transitive verb + gerund",sy:"evade, escape, prevent",an:"face, confront, seek",f:1},
+{w:"become",p:"verb",vf:"become / became / become",en:"/bɪˈkʌm/",th:"บิ-คัม / บิ-เคม / บิ-คัม",m:"กลายเป็น",c:"become famous, become aware",u:"formal/informal",ex:"She became a doctor after 8 years of study.",g:"linking verb + noun/adjective",sy:"turn into, grow into",an:"remain, stay",f:1},
+{w:"begin",p:"verb",vf:"begin / began / begun",en:"/bɪˈɡɪn/",th:"บิ-กิน / บิ-แกน / บิ-กัน",m:"เริ่มต้น",c:"begin a journey, begin work",u:"formal",ex:"The meeting will begin at 9 a.m.",g:"transitive/intransitive verb",sy:"start, commence, initiate",an:"end, finish, stop",f:1},
+{w:"believe",p:"verb",vf:"believe / believed / believed",en:"/bɪˈliːv/",th:"บิ-ลีฟ / บิ-ลีฟด์ / บิ-ลีฟด์",m:"เชื่อ",c:"believe in yourself, believe a story",u:"formal/informal",ex:"I believe you can do it.",g:"transitive / stative verb",sy:"trust, think, suppose",an:"doubt, disbelieve",f:1},
+{w:"break",p:"verb",vf:"break / broke / broken",en:"/breɪk/",th:"เบรค / โบรค / โบร-เคิน",m:"ทำแตก, หยุดพัก",c:"break a record, take a break",u:"informal",ex:"He broke his leg while playing football.",g:"transitive/intransitive verb",sy:"smash, shatter, crack",an:"fix, repair, mend",f:1},
+{w:"build",p:"verb",vf:"build / built / built",en:"/bɪld/",th:"บิลด์ / บิลท์ / บิลท์",m:"สร้าง",c:"build a house, build confidence",u:"formal/informal",ex:"They built a new school in the village.",g:"transitive verb",sy:"construct, create, develop",an:"demolish, destroy",f:1},
+{w:"buy",p:"verb",vf:"buy / bought / bought",en:"/baɪ/",th:"บาย / บอท / บอท",m:"ซื้อ",c:"buy food, buy time",u:"informal",ex:"I need to buy some groceries.",g:"transitive verb",sy:"purchase, acquire, get",an:"sell",f:1},
+{w:"call",p:"verb",vf:"call / called / called",en:"/kɔːl/",th:"คอล / คอลด์ / คอลด์",m:"โทร, เรียก",c:"call someone, call a meeting",u:"informal",ex:"She called me three times today.",g:"transitive verb",sy:"phone, contact, name",an:"ignore",f:1},
+{w:"change",p:"verb/noun",vf:"change / changed / changed",en:"/tʃeɪndʒ/",th:"เชนจ์ / เชนจด์ / เชนจด์",m:"เปลี่ยนแปลง",c:"change your mind, change plans",u:"formal/informal",ex:"She changed her hairstyle.",g:"transitive/intransitive; countable noun",sy:"alter, modify, transform",an:"keep, maintain, preserve",f:1},
+{w:"choose",p:"verb",vf:"choose / chose / chosen",en:"/tʃuːz/",th:"ชูส / โชส / โช-เซิน",m:"เลือก",c:"choose carefully, choose a career",u:"formal/informal",ex:"You can choose any color you like.",g:"transitive verb",sy:"select, pick, decide on",an:"reject, refuse",f:1},
+{w:"come",p:"verb",vf:"come / came / come",en:"/kʌm/",th:"คัม / เคม / คัม",m:"มา",c:"come home, come true",u:"informal",ex:"Come and sit with us.",g:"intransitive verb",sy:"arrive, approach",an:"go, leave, depart",f:1},
+{w:"consider",p:"verb",vf:"consider / considered / considered",en:"/kənˈsɪdər/",th:"คอน-ซิด-เดอร์ / คอน-ซิด-เดอร์ด / คอน-ซิด-เดอร์ด",m:"พิจารณา",c:"consider options, consider carefully",u:"formal",ex:"Please consider my proposal.",g:"transitive verb",sy:"think about, contemplate, weigh",an:"ignore, dismiss",f:1},
+{w:"continue",p:"verb",vf:"continue / continued / continued",en:"/kənˈtɪnjuː/",th:"คอน-ทิน-นิว / คอน-ทิน-นิวด์ / คอน-ทิน-นิวด์",m:"ดำเนินต่อ",c:"continue working, continue the conversation",u:"formal/informal",ex:"She continued to work despite being tired.",g:"transitive/intransitive verb",sy:"go on, keep, proceed",an:"stop, quit",f:1},
+{w:"create",p:"verb",vf:"create / created / created",en:"/kriˈeɪt/",th:"คริ-เอท / คริ-เอ-เทด / คริ-เอ-เทด",m:"สร้าง, ก่อให้เกิด",c:"create a plan, create opportunities",u:"formal/informal",ex:"She created a beautiful painting.",g:"transitive verb",sy:"make, produce, generate",an:"destroy, eliminate",f:1},
+{w:"decide",p:"verb",vf:"decide / decided / decided",en:"/dɪˈsaɪd/",th:"ดิ-ไซด์ / ดิ-ไซ-เดด / ดิ-ไซ-เดด",m:"ตัดสินใจ",c:"decide to go, decide on a plan",u:"formal/informal",ex:"Have you decided what to order?",g:"transitive verb + to-infinitive",sy:"choose, determine, resolve",an:"hesitate, waver",f:1},
+{w:"deliver",p:"verb",vf:"deliver / delivered / delivered",en:"/dɪˈlɪvər/",th:"ดิ-ลิฟ-เวอร์ / ดิ-ลิฟ-เวอร์ด / ดิ-ลิฟ-เวอร์ด",m:"ส่งมอบ",c:"deliver results, deliver on time",u:"formal/informal",ex:"We always deliver projects on schedule.",g:"transitive verb",sy:"provide, supply, hand over",an:"withhold",f:1},
+{w:"describe",p:"verb",vf:"describe / described / described",en:"/dɪˈskraɪb/",th:"ดิ-สไครบ์ / ดิ-สไคร์บด์ / ดิ-สไคร์บด์",m:"อธิบาย, บรรยาย",c:"describe a scene, describe feelings",u:"formal/informal",ex:"Can you describe what you saw?",g:"transitive verb",sy:"explain, depict, illustrate",an:"",f:1},
+{w:"develop",p:"verb",vf:"develop / developed / developed",en:"/dɪˈvɛləp/",th:"ดิ-เวล-เลิพ / ดิ-เวล-เลิพท์ / ดิ-เวล-เลิพท์",m:"พัฒนา",c:"develop skills, develop a product",u:"formal",ex:"We need to develop better habits.",g:"transitive/intransitive verb",sy:"grow, improve, advance",an:"decline, deteriorate",f:1},
+{w:"discuss",p:"verb",vf:"discuss / discussed / discussed",en:"/dɪˈskʌs/",th:"ดิส-คัส / ดิส-คัสท์ / ดิส-คัสท์",m:"พูดคุย, อภิปราย",c:"discuss a proposal, discuss an issue",u:"formal/informal",ex:"Let us discuss the results in our next meeting.",g:"transitive verb",sy:"talk about, debate, address",an:"ignore, avoid",f:1},
+{w:"discover",p:"verb",vf:"discover / discovered / discovered",en:"/dɪˈskʌvər/",th:"ดิส-คัฟ-เวอร์ / ดิส-คัฟ-เวอร์ด / ดิส-คัฟ-เวอร์ด",m:"ค้นพบ",c:"discover a secret, discover talent",u:"formal/informal",ex:"She discovered a new way to solve the problem.",g:"transitive verb",sy:"find, uncover, reveal",an:"lose, hide",f:1},
+{w:"enjoy",p:"verb",vf:"enjoy / enjoyed / enjoyed",en:"/ɪnˈdʒɔɪ/",th:"เอน-จอย / เอน-จอยด์ / เอน-จอยด์",m:"สนุก, เพลิดเพลิน",c:"enjoy life, enjoy a meal",u:"informal",ex:"I really enjoy reading books.",g:"transitive verb + gerund",sy:"love, like, appreciate",an:"hate, dislike, suffer",f:1},
+{w:"explain",p:"verb",vf:"explain / explained / explained",en:"/ɪkˈspleɪn/",th:"เอ็กซ์-เพลน / เอ็กซ์-เพลนด์ / เอ็กซ์-เพลนด์",m:"อธิบาย",c:"explain a concept, explain why",u:"formal/informal",ex:"Can you explain how this works?",g:"transitive verb",sy:"clarify, describe, illustrate",an:"confuse, complicate",f:1},
+{w:"fail",p:"verb",vf:"fail / failed / failed",en:"/feɪl/",th:"เฟล / เฟลด์ / เฟลด์",m:"ล้มเหลว, สอบตก",c:"fail an exam, fail to do something",u:"formal/informal",ex:"He failed the driving test twice.",g:"intransitive / transitive verb",sy:"lose, miss, fall short",an:"succeed, pass, achieve",f:1},
+{w:"feel",p:"verb",vf:"feel / felt / felt",en:"/fiːl/",th:"ฟีล / เฟลท์ / เฟลท์",m:"รู้สึก",c:"feel tired, feel confident",u:"informal",ex:"I feel so happy today.",g:"linking verb + adjective",sy:"sense, experience",an:"",f:1},
+{w:"find",p:"verb",vf:"find / found / found",en:"/faɪnd/",th:"ไฟนด์ / เฟาน์ด / เฟาน์ด",m:"พบ, ค้นหา",c:"find a solution, find out the truth",u:"informal",ex:"I can't find my keys.",g:"transitive verb",sy:"discover, locate, uncover",an:"lose, miss",f:1},
+{w:"finish",p:"verb",vf:"finish / finished / finished",en:"/ˈfɪnɪʃ/",th:"ฟิน-นิช / ฟิน-นิชท์ / ฟิน-นิชท์",m:"เสร็จสิ้น, จบ",c:"finish work, finish a project",u:"informal",ex:"Have you finished your homework?",g:"transitive/intransitive verb",sy:"complete, end, conclude",an:"start, begin",f:1},
+{w:"follow",p:"verb",vf:"follow / followed / followed",en:"/ˈfɒloʊ/",th:"ฟอล-โล / ฟอล-โลด์ / ฟอล-โลด์",m:"ติดตาม, ทำตาม",c:"follow instructions, follow someone",u:"formal/informal",ex:"Please follow the safety rules.",g:"transitive verb",sy:"track, pursue, obey",an:"lead, ignore, disobey",f:1},
+{w:"forget",p:"verb",vf:"forget / forgot / forgotten",en:"/fəˈɡɛt/",th:"ฟอ-เก็ต / ฟอ-ก็อท / ฟอ-ก็อท-เทิน",m:"ลืม",c:"forget to do, forget about it",u:"informal",ex:"Don't forget to lock the door.",g:"transitive verb",sy:"overlook, neglect",an:"remember, recall",f:1},
+{w:"get",p:"verb",vf:"get / got / gotten",en:"/ɡɛt/",th:"เก็ท / ก็อท / ก็อท-เทิน",m:"ได้รับ, ไป, เข้าใจ",c:"get a job, get ready, get along",u:"informal",ex:"Did you get my message?",g:"transitive/intransitive; many phrasal verbs",sy:"receive, obtain, acquire",an:"give, lose",f:1},
+{w:"give",p:"verb",vf:"give / gave / given",en:"/ɡɪv/",th:"กิฟ / เกฟ / กิฟ-เวิน",m:"ให้",c:"give advice, give a speech",u:"formal/informal",ex:"She gave me a wonderful gift.",g:"ditransitive verb",sy:"offer, provide, grant",an:"take, receive",f:1},
+{w:"go",p:"verb",vf:"go / went / gone",en:"/ɡoʊ/",th:"โก / เวนท์ / กอน",m:"ไป",c:"go home, go to work",u:"informal",ex:"Let's go to the beach this weekend.",g:"intransitive verb; many phrasal verbs",sy:"leave, travel, move",an:"come, stay, arrive",f:1},
+{w:"grow",p:"verb",vf:"grow / grew / grown",en:"/ɡroʊ/",th:"โกร / กรู / โกรน",m:"เติบโต, ปลูก",c:"grow up, grow a business",u:"formal/informal",ex:"The company grew rapidly last year.",g:"intransitive/transitive verb",sy:"expand, develop, increase",an:"shrink, decline",f:1},
+{w:"happen",p:"verb",vf:"happen / happened / happened",en:"/ˈhæpən/",th:"แฮป-เพิน / แฮป-เพินด์ / แฮป-เพินด์",m:"เกิดขึ้น",c:"happen suddenly, what happened?",u:"informal",ex:"What happened to your car?",g:"intransitive verb",sy:"occur, take place, arise",an:"",f:1},
+{w:"hear",p:"verb",vf:"hear / heard / heard",en:"/hɪər/",th:"เฮียร์ / เฮิร์ด / เฮิร์ด",m:"ได้ยิน",c:"hear a sound, hear from someone",u:"informal",ex:"I can't hear you — the music is too loud.",g:"transitive / stative verb",sy:"listen, perceive",an:"",f:1},
+{w:"help",p:"verb/noun",vf:"help / helped / helped",en:"/hɛlp/",th:"เฮลพ์ / เฮลพ์ท / เฮลพ์ท",m:"ช่วยเหลือ",c:"help someone, ask for help",u:"informal",ex:"Can you help me carry these bags?",g:"transitive verb",sy:"assist, support, aid",an:"hinder, harm",f:1},
+{w:"hire",p:"verb",vf:"hire / hired / hired",en:"/haɪər/",th:"ไฮ-เออร์ / ไฮ-เออร์ด / ไฮ-เออร์ด",m:"จ้างงาน",c:"hire staff, hire a consultant",u:"formal/informal",ex:"The company plans to hire 50 new employees this year.",g:"transitive verb",sy:"employ, recruit, take on",an:"fire, dismiss, lay off",f:1},
+{w:"hold",p:"verb",vf:"hold / held / held",en:"/hoʊld/",th:"โฮลด์ / เฮลด์ / เฮลด์",m:"ถือ, จัดงาน, รอ",c:"hold a meeting, hold on",u:"formal/informal",ex:"Hold this for me, please.",g:"transitive verb",sy:"grip, carry, organize",an:"release, drop, let go",f:1},
+{w:"improve",p:"verb",vf:"improve / improved / improved",en:"/ɪmˈpruːv/",th:"อิม-พรูฟ / อิม-พรูฟด์ / อิม-พรูฟด์",m:"ปรับปรุง, พัฒนา",c:"improve skills, improve health",u:"formal/informal",ex:"I want to improve my English.",g:"transitive/intransitive verb",sy:"enhance, develop, better",an:"worsen, decline",f:1},
+{w:"include",p:"verb",vf:"include / included / included",en:"/ɪnˈkluːd/",th:"อิน-คลูด / อิน-คลู-เดด / อิน-คลู-เดด",m:"รวม, รวมถึง",c:"include everyone, include details",u:"formal",ex:"The price includes tax.",g:"transitive verb",sy:"contain, involve, encompass",an:"exclude, omit",f:1},
+{w:"increase",p:"verb/noun",vf:"increase / increased / increased",en:"/ɪnˈkriːs/",th:"อิน-ครีส / อิน-ครีสท์ / อิน-ครีสท์",m:"เพิ่มขึ้น",c:"increase sales, an increase in price",u:"formal",ex:"The population has increased significantly.",g:"transitive/intransitive verb",sy:"grow, rise, boost",an:"decrease, reduce, drop",f:1},
+{w:"invest",p:"verb",vf:"invest / invested / invested",en:"/ɪnˈvɛst/",th:"อิน-เวสท์ / อิน-เวส-เทด / อิน-เวส-เทด",m:"ลงทุน",c:"invest in training, invest money",u:"formal",ex:"The company invested heavily in new technology.",g:"transitive/intransitive verb",sy:"fund, put money into, contribute",an:"withdraw, divest",f:1},
+{w:"join",p:"verb",vf:"join / joined / joined",en:"/dʒɔɪn/",th:"จอยน์ / จอยน์ด์ / จอยน์ด์",m:"เข้าร่วม",c:"join a group, join forces",u:"formal/informal",ex:"Would you like to join us for dinner?",g:"transitive/intransitive verb",sy:"participate, enter, connect",an:"leave, quit, separate",f:1},
+{w:"keep",p:"verb",vf:"keep / kept / kept",en:"/kiːp/",th:"คีพ / เก็พท์ / เก็พท์",m:"เก็บ, รักษา, ทำต่อ",c:"keep a secret, keep going",u:"informal",ex:"Keep trying — you'll get it soon.",g:"transitive verb + gerund",sy:"maintain, retain, hold",an:"give up, lose, release",f:1},
+{w:"know",p:"verb",vf:"know / knew / known",en:"/noʊ/",th:"โน / นิว / โนน",m:"รู้, รู้จัก",c:"know the answer, know someone",u:"informal",ex:"Do you know how to cook Thai food?",g:"transitive / stative verb",sy:"understand, recognize",an:"ignore, misunderstand",f:1},
+{w:"learn",p:"verb",vf:"learn / learned / learned",en:"/lɜːrn/",th:"เลิร์น / เลิร์นด์ / เลิร์นด์",m:"เรียน, เรียนรู้",c:"learn a language, learn from mistakes",u:"formal/informal",ex:"She learned Spanish in six months.",g:"transitive verb",sy:"study, acquire, master",an:"forget, teach",f:1},
+{w:"leave",p:"verb",vf:"leave / left / left",en:"/liːv/",th:"ลีฟ / เลฟท์ / เลฟท์",m:"ออกจาก, ทิ้งไว้",c:"leave home, leave a message",u:"formal/informal",ex:"He left the office at 5 p.m.",g:"transitive/intransitive verb",sy:"depart, go, exit",an:"arrive, come, stay",f:1},
+{w:"like",p:"verb",vf:"like / liked / liked",en:"/laɪk/",th:"ไลค์ / ไลค์ท์ / ไลค์ท์",m:"ชอบ",c:"like music, like doing something",u:"informal",ex:"I really like Thai food.",g:"transitive / stative verb",sy:"enjoy, love, prefer",an:"dislike, hate",f:1},
+{w:"live",p:"verb",vf:"live / lived / lived",en:"/lɪv/",th:"ลิฟ / ลิฟด์ / ลิฟด์",m:"อาศัยอยู่, มีชีวิต",c:"live in Bangkok, live a good life",u:"informal",ex:"She lives near the train station.",g:"intransitive/transitive verb",sy:"reside, dwell, exist",an:"die",f:1},
+{w:"look",p:"verb",vf:"look / looked / looked",en:"/lʊk/",th:"ลุค / ลุคท์ / ลุคท์",m:"มอง, ดู",c:"look at, look for something",u:"informal",ex:"Look at that beautiful sunset!",g:"intransitive verb",sy:"see, observe, watch",an:"",f:1},
+{w:"lose",p:"verb",vf:"lose / lost / lost",en:"/luːz/",th:"ลูส / ลอสท์ / ลอสท์",m:"แพ้, สูญเสีย",c:"lose a game, lose weight",u:"informal",ex:"I always lose my keys.",g:"transitive verb",sy:"miss, drop, forfeit",an:"win, find, gain",f:1},
+{w:"love",p:"verb/noun",vf:"love / loved / loved",en:"/lʌv/",th:"ลัฟ / ลัฟด์ / ลัฟด์",m:"รัก, ชื่นชอบ",c:"love someone, fall in love",u:"informal",ex:"I love spending time with my family.",g:"transitive / stative verb",sy:"adore, cherish, like",an:"hate, dislike",f:1},
+{w:"make",p:"verb",vf:"make / made / made",en:"/meɪk/",th:"เมค / เมด / เมด",m:"ทำ, สร้าง",c:"make a decision, make money",u:"informal",ex:"She made a delicious cake.",g:"transitive verb",sy:"create, produce, prepare",an:"destroy, break",f:1},
+{w:"manage",p:"verb",vf:"manage / managed / managed",en:"/ˈmænɪdʒ/",th:"แมน-นิจ / แมน-นิจด์ / แมน-นิจด์",m:"จัดการ, สามารถทำได้",c:"manage a team, manage to do",u:"formal",ex:"How do you manage to stay so calm?",g:"transitive verb",sy:"handle, control, succeed in",an:"fail, mismanage",f:1},
+{w:"meet",p:"verb",vf:"meet / met / met",en:"/miːt/",th:"มีท / เมท / เมท",m:"พบ, ตอบสนอง",c:"meet a deadline, meet new people",u:"formal/informal",ex:"I met my best friend at university.",g:"transitive/intransitive verb",sy:"encounter, greet, gather",an:"avoid, miss",f:1},
+{w:"miss",p:"verb",vf:"miss / missed / missed",en:"/mɪs/",th:"มิส / มิสท์ / มิสท์",m:"คิดถึง, พลาด",c:"miss someone, miss a bus",u:"informal",ex:"I miss my hometown so much.",g:"transitive verb",sy:"long for, skip, fail to catch",an:"catch, hit, find",f:1},
+{w:"move",p:"verb",vf:"move / moved / moved",en:"/muːv/",th:"มูฟ / มูฟด์ / มูฟด์",m:"เคลื่อนไหว, ย้าย",c:"move forward, move to a new city",u:"formal/informal",ex:"She moved to Tokyo last year.",g:"transitive/intransitive verb",sy:"shift, transfer, relocate",an:"stay, remain, stop",f:1},
+{w:"need",p:"verb/noun",vf:"need / needed / needed",en:"/niːd/",th:"นีด / นี-เดด / นี-เดด",m:"ต้องการ",c:"need help, meet a need",u:"informal",ex:"I need more time to finish this.",g:"modal / main verb",sy:"require, want, must have",an:"",f:1},
+{w:"negotiate",p:"verb",vf:"negotiate / negotiated / negotiated",en:"/nɪˈɡoʊʃieɪt/",th:"นิ-โก-ชิ-เอท / นิ-โก-ชิ-เอ-เทด / นิ-โก-ชิ-เอ-เทด",m:"เจรจาต่อรอง",c:"negotiate a contract, negotiate a salary",u:"formal",ex:"She negotiated a better deal for the company.",g:"transitive/intransitive verb",sy:"bargain, discuss terms, mediate",an:"accept without question",f:1},
+{w:"offer",p:"verb/noun",vf:"offer / offered / offered",en:"/ˈɒfər/",th:"ออ-เฟอร์ / ออ-เฟอร์ด / ออ-เฟอร์ด",m:"เสนอ",c:"offer help, job offer",u:"formal",ex:"She offered to drive me home.",g:"transitive verb",sy:"propose, suggest, provide",an:"refuse, reject",f:1},
+{w:"open",p:"verb/adj",vf:"open / opened / opened",en:"/ˈoʊpən/",th:"โอ-เพิน / โอ-เพินด์ / โอ-เพินด์",m:"เปิด",c:"open a door, open-minded",u:"informal",ex:"The store opens at 9 every morning.",g:"transitive/intransitive verb",sy:"unlock, begin, launch",an:"close, shut",f:1},
+{w:"organize",p:"verb",vf:"organize / organized / organized",en:"/ˈɔːrɡənaɪz/",th:"ออ-กะ-ไนส์ / ออ-กะ-ไนสด์ / ออ-กะ-ไนสด์",m:"จัด, จัดระเบียบ",c:"organize a meeting, organize files",u:"formal/informal",ex:"She was asked to organize the annual company event.",g:"transitive verb",sy:"arrange, coordinate, plan",an:"disorganize, mess up",f:1},
+{w:"pay",p:"verb",vf:"pay / paid / paid",en:"/peɪ/",th:"เพย์ / เพด / เพด",m:"จ่าย, ชำระ",c:"pay a bill, pay attention",u:"informal",ex:"Did you pay for the coffee?",g:"transitive/intransitive verb",sy:"spend, settle, compensate",an:"receive, collect",f:1},
+{w:"plan",p:"verb/noun",vf:"plan / planned / planned",en:"/plæn/",th:"แพลน / แพลนด์ / แพลนด์",m:"วางแผน, แผน",c:"plan a trip, have a plan",u:"formal/informal",ex:"We planned the event months in advance.",g:"transitive verb",sy:"organize, prepare, arrange",an:"improvise",f:1},
+{w:"play",p:"verb",vf:"play / played / played",en:"/pleɪ/",th:"เพลย์ / เพลย์ด์ / เพลย์ด์",m:"เล่น",c:"play music, play a role",u:"informal",ex:"The children played in the park all afternoon.",g:"transitive/intransitive verb",sy:"participate, perform",an:"work, stop",f:1},
+{w:"prepare",p:"verb",vf:"prepare / prepared / prepared",en:"/prɪˈpɛər/",th:"พริ-แพร์ / พริ-แพร์ด / พริ-แพร์ด",m:"เตรียม",c:"prepare food, prepare for an exam",u:"formal/informal",ex:"I need to prepare my presentation.",g:"transitive/intransitive verb",sy:"get ready, arrange, plan",an:"improvise, neglect",f:1},
+{w:"present",p:"verb",vf:"present / presented / presented",en:"/prɪˈzɛnt/",th:"พริ-เซนท์ / พริ-เซน-เทด / พริ-เซน-เทด",m:"นำเสนอ",c:"present a report, present findings",u:"formal",ex:"He will present the quarterly results to the board.",g:"transitive verb",sy:"show, demonstrate, introduce",an:"withhold, hide",f:1},
+{w:"promote",p:"verb",vf:"promote / promoted / promoted",en:"/prəˈmoʊt/",th:"พระ-โมท / พระ-โม-เทด / พระ-โม-เทด",m:"เลื่อนตำแหน่ง, ส่งเสริม",c:"promote an employee, promote a product",u:"formal/informal",ex:"She was promoted to senior manager after three years.",g:"transitive verb",sy:"advance, elevate, market",an:"demote, downgrade",f:1},
+{w:"reach",p:"verb",vf:"reach / reached / reached",en:"/riːtʃ/",th:"รีช / รีชท์ / รีชท์",m:"ถึง, เข้าถึง",c:"reach a goal, reach out",u:"formal/informal",ex:"We finally reached our destination.",g:"transitive verb",sy:"arrive at, achieve, attain",an:"miss, fail",f:1},
+{w:"read",p:"verb",vf:"read / read / read",en:"/riːd/",th:"รีด / เรด / เรด",m:"อ่าน",c:"read a book, read between the lines",u:"formal/informal",ex:"She reads for an hour every night.",g:"transitive/intransitive verb",sy:"study, review, browse",an:"write",f:1},
+{w:"receive",p:"verb",vf:"receive / received / received",en:"/rɪˈsiːv/",th:"ริ-ซีฟ / ริ-ซีฟด์ / ริ-ซีฟด์",m:"ได้รับ",c:"receive a gift, receive feedback",u:"formal",ex:"She received the award yesterday.",g:"transitive verb",sy:"get, accept, obtain",an:"give, send",f:1},
+{w:"remember",p:"verb",vf:"remember / remembered / remembered",en:"/rɪˈmɛmbər/",th:"ริ-เมม-เบอร์ / ริ-เมม-เบอร์ด / ริ-เมม-เบอร์ด",m:"จำได้",c:"remember a name, remember to do",u:"informal",ex:"Do you remember where we parked?",g:"transitive verb",sy:"recall, recollect",an:"forget",f:1},
+{w:"report",p:"verb/noun",vf:"report / reported / reported",en:"/rɪˈpɔːrt/",th:"ริ-พอร์ท / ริ-พอร์ท-เทด / ริ-พอร์ท-เทด",m:"รายงาน",c:"report to a manager, write a report",u:"formal",ex:"Please report any issues to the team leader.",g:"transitive/intransitive verb; countable noun",sy:"inform, notify, document",an:"hide, conceal",f:1},
+{w:"request",p:"verb/noun",vf:"request / requested / requested",en:"/rɪˈkwɛst/",th:"ริ-เควสท์ / ริ-เควส-เทด / ริ-เควส-เทด",m:"ร้องขอ, คำร้อง",c:"request a meeting, submit a request",u:"formal",ex:"She requested additional time to complete the project.",g:"transitive verb; countable noun",sy:"ask for, apply for, seek",an:"demand, order",f:1},
+{w:"resign",p:"verb",vf:"resign / resigned / resigned",en:"/rɪˈzaɪn/",th:"ริ-ไซน์ / ริ-ไซน์ด์ / ริ-ไซน์ด์",m:"ลาออก",c:"resign from a job, resign a position",u:"formal",ex:"He resigned from his position after 10 years.",g:"intransitive verb + from",sy:"quit, leave, step down",an:"stay, remain, accept",f:1},
+{w:"return",p:"verb",vf:"return / returned / returned",en:"/rɪˈtɜːrn/",th:"ริ-เทิร์น / ริ-เทิร์นด์ / ริ-เทิร์นด์",m:"กลับ, คืน",c:"return home, return a call",u:"formal/informal",ex:"He returned the book to the library.",g:"transitive/intransitive verb",sy:"come back, go back, give back",an:"leave, keep",f:1},
+{w:"review",p:"verb/noun",vf:"review / reviewed / reviewed",en:"/rɪˈvjuː/",th:"ริ-วิว / ริ-วิวด์ / ริ-วิวด์",m:"ตรวจสอบ, ทบทวน",c:"review a document, performance review",u:"formal",ex:"Let us review the contract before signing.",g:"transitive verb; countable noun",sy:"check, assess, evaluate",an:"ignore, overlook",f:1},
+{w:"run",p:"verb",vf:"run / ran / run",en:"/rʌn/",th:"รัน / แรน / รัน",m:"วิ่ง, ดำเนินการ",c:"run a business, run late",u:"informal",ex:"She runs 5 km every morning.",g:"intransitive/transitive verb",sy:"jog, sprint, operate",an:"walk, stop",f:1},
+{w:"say",p:"verb",vf:"say / said / said",en:"/seɪ/",th:"เซย์ / เซด / เซด",m:"พูด, บอก",c:"say something, say sorry",u:"informal",ex:"What did she say?",g:"transitive verb",sy:"tell, speak, state",an:"",f:1},
+{w:"see",p:"verb",vf:"see / saw / seen",en:"/siː/",th:"ซี / ซอ / ซีน",m:"เห็น, เข้าใจ",c:"see someone, see what I mean",u:"informal",ex:"I can't see anything in this fog.",g:"transitive / stative verb",sy:"observe, notice, understand",an:"",f:1},
+{w:"send",p:"verb",vf:"send / sent / sent",en:"/sɛnd/",th:"เซนด์ / เซนท์ / เซนท์",m:"ส่ง",c:"send an email, send a message",u:"formal/informal",ex:"Please send me the report by Friday.",g:"ditransitive verb",sy:"transmit, deliver, mail",an:"receive",f:1},
+{w:"show",p:"verb",vf:"show / showed / shown",en:"/ʃoʊ/",th:"โชว์ / โชว์ด / โชน",m:"แสดง",c:"show someone how, show up",u:"formal/informal",ex:"Can you show me the way?",g:"ditransitive verb",sy:"demonstrate, display, reveal",an:"hide, conceal",f:1},
+{w:"sleep",p:"verb",vf:"sleep / slept / slept",en:"/sliːp/",th:"สลีพ / สเลพท์ / สเลพท์",m:"นอนหลับ",c:"sleep well, sleep in",u:"informal",ex:"I usually sleep 7-8 hours a night.",g:"intransitive verb",sy:"rest, nap",an:"wake up, work",f:1},
+{w:"speak",p:"verb",vf:"speak / spoke / spoken",en:"/spiːk/",th:"สพีค / สโปค / สโป-เคิน",m:"พูด",c:"speak English, speak up",u:"formal/informal",ex:"She speaks three languages fluently.",g:"intransitive/transitive verb",sy:"talk, say, communicate",an:"listen",f:1},
+{w:"spend",p:"verb",vf:"spend / spent / spent",en:"/spɛnd/",th:"สเปนด์ / สเปนท์ / สเปนท์",m:"ใช้จ่าย, ใช้เวลา",c:"spend money, spend time",u:"informal",ex:"We spent the whole day at the museum.",g:"transitive verb",sy:"use, invest, pass",an:"save, earn",f:1},
+{w:"start",p:"verb/noun",vf:"start / started / started",en:"/stɑːrt/",th:"สตาร์ท / สตาร์ท-เทด / สตาร์ท-เทด",m:"เริ่มต้น",c:"start a business, fresh start",u:"informal",ex:"Let's start the meeting now.",g:"transitive/intransitive verb",sy:"begin, initiate, launch",an:"stop, finish, end",f:1},
+{w:"stay",p:"verb",vf:"stay / stayed / stayed",en:"/steɪ/",th:"สเตย์ / สเตย์ด์ / สเตย์ด์",m:"อยู่, พัก",c:"stay at home, stay focused",u:"informal",ex:"I'll stay home tonight.",g:"intransitive verb",sy:"remain, keep, continue",an:"leave, go, depart",f:1},
+{w:"stop",p:"verb",vf:"stop / stopped / stopped",en:"/stɒp/",th:"สต็อพ / สต็อพท์ / สต็อพท์",m:"หยุด",c:"stop talking, stop a car",u:"informal",ex:"Stop wasting time.",g:"transitive/intransitive verb + gerund",sy:"end, halt, quit",an:"start, continue",f:1},
+{w:"submit",p:"verb",vf:"submit / submitted / submitted",en:"/səbˈmɪt/",th:"ซับ-มิท / ซับ-มิท-เทด / ซับ-มิท-เทด",m:"ส่ง, ยื่น",c:"submit a report, submit a form",u:"formal",ex:"Please submit your expense report by end of the month.",g:"transitive verb",sy:"hand in, send, present",an:"withdraw, hold back",f:1},
+{w:"suggest",p:"verb",vf:"suggest / suggested / suggested",en:"/səˈdʒɛst/",th:"ซัก-เจสท์ / ซัก-เจส-เทด / ซัก-เจส-เทด",m:"แนะนำ, เสนอแนะ",c:"suggest a plan, suggest doing",u:"formal",ex:"I suggest you talk to your manager.",g:"transitive verb",sy:"recommend, propose, advise",an:"oppose, disagree",f:1},
+{w:"support",p:"verb/noun",vf:"support / supported / supported",en:"/səˈpɔːrt/",th:"ซัพ-พอร์ท / ซัพ-พอร์ท-เทด / ซัพ-พอร์ท-เทด",m:"สนับสนุน",c:"support someone, emotional support",u:"formal/informal",ex:"Thank you for your support.",g:"transitive verb / uncountable noun",sy:"help, back, encourage",an:"oppose, undermine",f:1},
+{w:"take",p:"verb",vf:"take / took / taken",en:"/teɪk/",th:"เทค / ทุค / เทค-เคิน",m:"เอา, พา, ใช้เวลา",c:"take care, take time",u:"informal",ex:"It takes 30 minutes to get there.",g:"transitive verb; many phrasal verbs",sy:"grab, carry, need",an:"give, put back",f:1},
+{w:"talk",p:"verb",vf:"talk / talked / talked",en:"/tɔːk/",th:"ทอค / ทอค์ท / ทอค์ท",m:"พูดคุย",c:"talk to someone, talk about",u:"informal",ex:"Can we talk later?",g:"intransitive verb",sy:"speak, chat, discuss",an:"listen",f:1},
+{w:"teach",p:"verb",vf:"teach / taught / taught",en:"/tiːtʃ/",th:"ทีช / ทอท / ทอท",m:"สอน",c:"teach a class, teach a lesson",u:"formal",ex:"She teaches math at a high school.",g:"ditransitive verb",sy:"educate, instruct, train",an:"learn",f:1},
+{w:"tell",p:"verb",vf:"tell / told / told",en:"/tɛl/",th:"เทล / โทลด์ / โทลด์",m:"บอก, เล่า",c:"tell a story, tell someone",u:"informal",ex:"Please tell me what happened.",g:"ditransitive verb",sy:"say, inform, explain",an:"ask, hide",f:1},
+{w:"think",p:"verb",vf:"think / thought / thought",en:"/θɪŋk/",th:"ธิงค์ / ธ็อท / ธ็อท",m:"คิด",c:"think about, think of",u:"informal",ex:"I think you're right.",g:"transitive / stative verb",sy:"believe, consider, feel",an:"",f:1},
+{w:"try",p:"verb",vf:"try / tried / tried",en:"/traɪ/",th:"ทราย / ไทรด์ / ไทรด์",m:"พยายาม, ลอง",c:"try hard, try something new",u:"informal",ex:"Try not to worry too much.",g:"transitive verb",sy:"attempt, test, make an effort",an:"give up",f:1},
+{w:"understand",p:"verb",vf:"understand / understood / understood",en:"/ˌʌndərˈstænd/",th:"อัน-เดอร์-สแตนด์ / อัน-เดอร์-สทุด / อัน-เดอร์-สทุด",m:"เข้าใจ",c:"understand a concept, understand feelings",u:"formal/informal",ex:"I don't understand this question.",g:"transitive / stative verb",sy:"grasp, comprehend, realize",an:"misunderstand, confuse",f:1},
+{w:"use",p:"verb",vf:"use / used / used",en:"/juːz/",th:"ยูส / ยูสด์ / ยูสด์",m:"ใช้",c:"use tools, use your time wisely",u:"formal/informal",ex:"I use my phone for everything.",g:"transitive verb",sy:"apply, employ, utilize",an:"waste, ignore",f:1},
+{w:"wait",p:"verb",vf:"wait / waited / waited",en:"/weɪt/",th:"เวท / เวท-เทด / เวท-เทด",m:"รอ",c:"wait for someone, wait in line",u:"informal",ex:"Please wait a moment.",g:"intransitive verb + for",sy:"hold on, stay, pause",an:"go, leave, rush",f:1},
+{w:"walk",p:"verb",vf:"walk / walked / walked",en:"/wɔːk/",th:"วอค / วอค์ท / วอค์ท",m:"เดิน",c:"walk to work, walk the dog",u:"informal",ex:"Let's walk to the coffee shop.",g:"intransitive/transitive verb",sy:"stroll, hike, stride",an:"run, drive",f:1},
+{w:"want",p:"verb",vf:"want / wanted / wanted",en:"/wɒnt/",th:"วอนท์ / วอน-เทด / วอน-เทด",m:"ต้องการ, อยาก",c:"want to do, want something",u:"informal",ex:"What do you want to eat?",g:"transitive / stative verb",sy:"desire, wish, need",an:"",f:1},
+{w:"watch",p:"verb",vf:"watch / watched / watched",en:"/wɒtʃ/",th:"วอช / วอชท์ / วอชท์",m:"ดู, เฝ้า",c:"watch TV, watch over",u:"informal",ex:"I like to watch movies on weekends.",g:"transitive verb",sy:"observe, see, monitor",an:"ignore",f:1},
+{w:"work",p:"verb/noun",vf:"work / worked / worked",en:"/wɜːrk/",th:"เวิร์ค / เวิร์ค์ท / เวิร์ค์ท",m:"ทำงาน, ใช้ได้ผล",c:"work hard, work as a team",u:"formal/informal",ex:"She works from home three days a week.",g:"intransitive/transitive verb",sy:"labor, function, operate",an:"rest, play, fail",f:1},
+{w:"write",p:"verb",vf:"write / wrote / written",en:"/raɪt/",th:"ไรท์ / โรท / ริท-เทิน",m:"เขียน",c:"write a letter, write down notes",u:"formal/informal",ex:"He writes in his journal every day.",g:"transitive/intransitive verb",sy:"compose, note, record",an:"read",f:1},
+{w:"able",p:"adjective",vf:"",en:"/ˈeɪbəl/",th:"เอ-เบิล",m:"สามารถ",c:"able to do, capable and able",u:"formal/informal",ex:"Are you able to meet tomorrow?",g:"predicate adjective + to-infinitive",sy:"capable, competent",an:"unable, incapable",f:1},
+{w:"afraid",p:"adjective",vf:"",en:"/əˈfreɪd/",th:"อะ-เฟรด",m:"กลัว",c:"afraid of spiders, afraid to speak",u:"informal",ex:"Are you afraid of the dark?",g:"predicate adjective + of/to",sy:"scared, frightened, fearful",an:"brave, fearless, confident",f:1},
+{w:"angry",p:"adjective",vf:"",en:"/ˈæŋɡri/",th:"แอง-กรี",m:"โกรธ",c:"angry at someone, angry about something",u:"informal",ex:"He was angry about the delay.",g:"predicate/attributive adjective",sy:"mad, furious, upset",an:"calm, happy, pleased",f:1},
+{w:"available",p:"adjective",vf:"",en:"/əˈveɪləbəl/",th:"อะ-เวล-ละ-เบิล",m:"ว่าง, มีอยู่",c:"available now, available options",u:"formal",ex:"Is the manager available?",g:"predicate adjective",sy:"free, accessible, ready",an:"unavailable, busy, occupied",f:1},
+{w:"brave",p:"adjective",vf:"",en:"/breɪv/",th:"เบรฟ",m:"กล้าหาญ",c:"brave decision, brave soldier",u:"formal/informal",ex:"It was brave of you to speak up.",g:"attributive/predicate adjective",sy:"courageous, bold, fearless",an:"cowardly, afraid, timid",f:1},
+{w:"busy",p:"adjective",vf:"",en:"/ˈbɪzi/",th:"บิซ-ซี",m:"ยุ่ง, ไม่ว่าง",c:"busy schedule, busy day",u:"informal",ex:"I've been really busy this week.",g:"attributive/predicate adjective",sy:"occupied, engaged, hectic",an:"free, idle, relaxed",f:1},
+{w:"careful",p:"adjective",vf:"",en:"/ˈkɛərfəl/",th:"แคร์-ฟูล",m:"ระมัดระวัง",c:"be careful, careful driver",u:"formal/informal",ex:"Be careful when crossing the road.",g:"predicate adjective + about/with",sy:"cautious, attentive, thorough",an:"careless, reckless",f:1},
+{w:"clear",p:"adjective",vf:"",en:"/klɪər/",th:"เคลียร์",m:"ชัดเจน",c:"clear instructions, crystal clear",u:"formal/informal",ex:"Her explanation was very clear.",g:"attributive/predicate adjective",sy:"obvious, plain, straightforward",an:"unclear, confusing, vague",f:1},
+{w:"confident",p:"adjective",vf:"",en:"/ˈkɒnfɪdənt/",th:"คอน-ฟิ-เดนท์",m:"มั่นใจ",c:"feel confident, confident speaker",u:"formal/informal",ex:"She felt confident before the interview.",g:"attributive/predicate adjective",sy:"sure, bold, self-assured",an:"insecure, doubtful, nervous",f:1},
+{w:"correct",p:"adjective",vf:"",en:"/kəˈrɛkt/",th:"คอ-เรคท์",m:"ถูกต้อง",c:"correct answer, correct behavior",u:"formal",ex:"That's the correct answer.",g:"attributive/predicate adjective",sy:"right, accurate, proper",an:"wrong, incorrect, mistaken",f:1},
+{w:"dangerous",p:"adjective",vf:"",en:"/ˈdeɪndʒərəs/",th:"เดน-เจอ-รัส",m:"อันตราย",c:"dangerous situation, dangerous driver",u:"formal/informal",ex:"Driving in the storm was very dangerous.",g:"attributive/predicate adjective",sy:"risky, unsafe, hazardous",an:"safe, harmless",f:1},
+{w:"different",p:"adjective",vf:"",en:"/ˈdɪfrənt/",th:"ดิฟ-เฟอ-เรนท์",m:"แตกต่าง",c:"completely different, different cultures",u:"formal/informal",ex:"These two situations are very different.",g:"attributive/predicate adjective",sy:"varied, distinct, unlike",an:"same, similar, identical",f:1},
+{w:"difficult",p:"adjective",vf:"",en:"/ˈdɪfɪkəlt/",th:"ดิฟ-ฟิ-คัลท์",m:"ยาก",c:"difficult task, difficult question",u:"formal/informal",ex:"This exam was more difficult than expected.",g:"attributive/predicate adjective",sy:"hard, challenging, tough",an:"easy, simple, straightforward",f:1},
+{w:"easy",p:"adjective",vf:"",en:"/ˈiːzi/",th:"อีซี",m:"ง่าย",c:"easy task, take it easy",u:"informal",ex:"The test was surprisingly easy.",g:"attributive/predicate adjective",sy:"simple, straightforward, effortless",an:"hard, difficult, challenging",f:1},
+{w:"efficient",p:"adjective",vf:"",en:"/ɪˈfɪʃənt/",th:"เอ-ฟิช-เชินท์",m:"มีประสิทธิภาพ",c:"efficient worker, efficient system",u:"formal",ex:"She is a very efficient and organized employee.",g:"attributive/predicate adjective",sy:"productive, effective, capable",an:"inefficient, wasteful",f:1},
+{w:"excellent",p:"adjective",vf:"",en:"/ˈɛksələnt/",th:"เอ็กซ์-เซล-เลนท์",m:"ยอดเยี่ยม",c:"excellent performance, excellent idea",u:"formal/informal",ex:"The team did an excellent job.",g:"attributive adjective",sy:"outstanding, superb, great",an:"poor, terrible, bad",f:1},
+{w:"excited",p:"adjective",vf:"",en:"/ɪkˈsaɪtɪd/",th:"เอ็กซ์-ไซ-เทด",m:"ตื่นเต้น",c:"excited about, really excited",u:"informal",ex:"I'm so excited about the trip!",g:"predicate adjective + about",sy:"thrilled, enthusiastic, eager",an:"bored, calm, indifferent",f:1},
+{w:"expensive",p:"adjective",vf:"",en:"/ɪkˈspɛnsɪv/",th:"เอ็กซ์-เพน-ซิฟ",m:"ราคาแพง",c:"expensive restaurant, expensive taste",u:"informal",ex:"That bag is way too expensive.",g:"attributive/predicate adjective",sy:"costly, pricey",an:"cheap, affordable, inexpensive",f:1},
+{w:"flexible",p:"adjective",vf:"",en:"/ˈflɛksɪbəl/",th:"เฟล็ค-ซิ-เบิล",m:"ยืดหยุ่น",c:"flexible schedule, flexible working hours",u:"formal/informal",ex:"Our company offers flexible working hours.",g:"attributive/predicate adjective",sy:"adaptable, adjustable, versatile",an:"rigid, inflexible, fixed",f:1},
+{w:"friendly",p:"adjective",vf:"",en:"/ˈfrɛndli/",th:"เฟรน-ลี",m:"เป็นมิตร",c:"friendly smile, user-friendly",u:"informal",ex:"Everyone in the office is friendly.",g:"attributive/predicate adjective",sy:"warm, kind, welcoming",an:"unfriendly, cold, hostile",f:1},
+{w:"happy",p:"adjective",vf:"",en:"/ˈhæpi/",th:"แฮปปี้",m:"มีความสุข",c:"feel happy, happy ending",u:"informal",ex:"I'm so happy for you!",g:"predicate/attributive adjective",sy:"joyful, glad, pleased",an:"sad, unhappy, miserable",f:1},
+{w:"healthy",p:"adjective",vf:"",en:"/ˈhɛlθi/",th:"เฮล-ธี",m:"มีสุขภาพดี",c:"healthy diet, healthy lifestyle",u:"informal",ex:"Eating vegetables keeps you healthy.",g:"attributive/predicate adjective",sy:"fit, well, strong",an:"unhealthy, sick, ill",f:1},
+{w:"honest",p:"adjective",vf:"",en:"/ˈɒnɪst/",th:"ออน-เนสท์",m:"ซื่อสัตย์",c:"honest answer, be honest with",u:"formal/informal",ex:"He's always honest, even when it's uncomfortable.",g:"attributive/predicate adjective",sy:"truthful, sincere, frank",an:"dishonest, deceitful",f:1},
+{w:"important",p:"adjective",vf:"",en:"/ɪmˈpɔːrtənt/",th:"อิม-พอ-เทนท์",m:"สำคัญ",c:"important decision, most important",u:"formal/informal",ex:"Sleep is important for your health.",g:"attributive/predicate adjective",sy:"crucial, significant, essential",an:"unimportant, trivial, minor",f:1},
+{w:"interesting",p:"adjective",vf:"",en:"/ˈɪntrəstɪŋ/",th:"อิน-เทอ-เรส-ทิง",m:"น่าสนใจ",c:"interesting topic, interesting idea",u:"informal",ex:"That's a very interesting question.",g:"attributive/predicate adjective",sy:"engaging, fascinating, appealing",an:"boring, dull, tedious",f:1},
+{w:"kind",p:"adjective",vf:"",en:"/kaɪnd/",th:"ไคนด์",m:"ใจดี",c:"kind person, be kind to",u:"informal",ex:"It was kind of you to help.",g:"attributive/predicate adjective",sy:"generous, caring, considerate",an:"unkind, cruel, mean",f:1},
+{w:"necessary",p:"adjective",vf:"",en:"/ˈnɛsəsɛri/",th:"เนส-เซส-เซ-รี",m:"จำเป็น",c:"necessary steps, strictly necessary",u:"formal",ex:"Is it necessary to wear formal clothes?",g:"predicate adjective + to-infinitive",sy:"essential, required, needed",an:"unnecessary, optional",f:1},
+{w:"patient",p:"adjective",vf:"",en:"/ˈpeɪʃənt/",th:"เพ-เชินท์",m:"อดทน",c:"be patient, patient teacher",u:"formal/informal",ex:"Learning a language requires being patient.",g:"predicate/attributive adjective",sy:"calm, tolerant, enduring",an:"impatient, anxious",f:1},
+{w:"perfect",p:"adjective",vf:"",en:"/ˈpɜːrfɪkt/",th:"เพอ-เฟคท์",m:"สมบูรณ์แบบ",c:"perfect timing, perfect score",u:"formal/informal",ex:"This weather is perfect for a picnic.",g:"attributive/predicate adjective",sy:"flawless, ideal, excellent",an:"imperfect, flawed",f:1},
+{w:"popular",p:"adjective",vf:"",en:"/ˈpɒpjʊlər/",th:"พอพ-พิว-ลา",m:"เป็นที่นิยม",c:"popular song, popular opinion",u:"informal",ex:"This restaurant is very popular.",g:"attributive/predicate adjective",sy:"well-liked, famous, trendy",an:"unpopular, disliked",f:1},
+{w:"productive",p:"adjective",vf:"",en:"/prəˈdʌktɪv/",th:"พระ-ดัค-ทิฟ",m:"มีประสิทธิผล",c:"productive meeting, productive day",u:"formal/informal",ex:"Working from home made her more productive.",g:"attributive/predicate adjective",sy:"efficient, effective, fruitful",an:"unproductive, wasteful, idle",f:1},
+{w:"professional",p:"adjective",vf:"",en:"/prəˈfɛʃənəl/",th:"พระ-เฟช-ชัน-นัล",m:"เป็นมืออาชีพ",c:"professional behavior, professional advice",u:"formal/informal",ex:"Always maintain a professional attitude at work.",g:"attributive/predicate adjective",sy:"expert, skilled, competent",an:"unprofessional, amateur",f:1},
+{w:"reliable",p:"adjective",vf:"",en:"/rɪˈlaɪəbəl/",th:"ริ-ไล-อะ-เบิล",m:"น่าเชื่อถือ, ไว้วางใจได้",c:"reliable employee, reliable system",u:"formal/informal",ex:"We need a reliable supplier for our materials.",g:"attributive/predicate adjective",sy:"trustworthy, dependable, consistent",an:"unreliable, untrustworthy",f:1},
+{w:"responsible",p:"adjective",vf:"",en:"/rɪˈspɒnsɪbəl/",th:"ริ-สพอน-ซิ-เบิล",m:"รับผิดชอบ",c:"responsible for a project, responsible person",u:"formal/informal",ex:"She is responsible for managing the marketing budget.",g:"predicate adjective + for",sy:"accountable, in charge, dependable",an:"irresponsible, careless",f:1},
+{w:"serious",p:"adjective",vf:"",en:"/ˈsɪəriəs/",th:"เซีย-ริ-เอิส",m:"จริงจัง, ร้ายแรง",c:"serious problem, serious about",u:"formal/informal",ex:"This is a very serious matter.",g:"attributive/predicate adjective",sy:"severe, important, solemn",an:"trivial, unimportant, light",f:1},
+{w:"simple",p:"adjective",vf:"",en:"/ˈsɪmpəl/",th:"ซิม-เพิล",m:"ง่าย, เรียบง่าย",c:"simple solution, keep it simple",u:"formal/informal",ex:"The recipe is surprisingly simple.",g:"attributive/predicate adjective",sy:"easy, basic, uncomplicated",an:"complex, complicated",f:1},
+{w:"successful",p:"adjective",vf:"",en:"/səkˈsɛsfəl/",th:"ซัค-เซส-ฟูล",m:"ประสบความสำเร็จ",c:"successful business, successful career",u:"formal",ex:"She had a successful career in finance.",g:"attributive/predicate adjective",sy:"accomplished, productive, thriving",an:"unsuccessful, failed",f:1},
+{w:"tired",p:"adjective",vf:"",en:"/taɪərd/",th:"ไทร์ด",m:"เหนื่อย, เบื่อ",c:"tired after work, tired of something",u:"informal",ex:"I'm really tired after that meeting.",g:"predicate adjective",sy:"exhausted, fatigued, worn out",an:"energetic, fresh, rested",f:1},
+{w:"urgent",p:"adjective",vf:"",en:"/ˈɜːrdʒənt/",th:"เออ-เจนท์",m:"เร่งด่วน",c:"urgent matter, urgent email",u:"formal/informal",ex:"This is an urgent request — please respond as soon as possible.",g:"attributive/predicate adjective",sy:"pressing, immediate, critical",an:"non-urgent, routine, low-priority",f:1},
+{w:"useful",p:"adjective",vf:"",en:"/ˈjuːsfəl/",th:"ยูส-ฟูล",m:"มีประโยชน์",c:"useful tip, useful tool",u:"formal/informal",ex:"Your advice was very useful.",g:"attributive/predicate adjective",sy:"helpful, practical, handy",an:"useless, pointless",f:1},
+{w:"wonderful",p:"adjective",vf:"",en:"/ˈwʌndərfəl/",th:"วัน-เดอ-ฟูล",m:"วิเศษ, ยอดเยี่ยม",c:"wonderful experience, wonderful day",u:"informal",ex:"We had a wonderful time.",g:"attributive/predicate adjective",sy:"amazing, great, fantastic",an:"terrible, awful, horrible",f:1},
+{w:"wrong",p:"adjective",vf:"",en:"/rɒŋ/",th:"รอง",m:"ผิด",c:"wrong answer, what's wrong",u:"informal",ex:"I think I took a wrong turn.",g:"attributive/predicate adjective",sy:"incorrect, mistaken, false",an:"right, correct, proper",f:1},
+{w:"ability",p:"noun",vf:"",en:"/əˈbɪlɪti/",th:"อะ-บิล-ลิ-ที",m:"ความสามารถ",c:"natural ability, have the ability to",u:"formal",ex:"She has the ability to solve problems quickly.",g:"countable noun",sy:"skill, talent, capability",an:"inability",f:1},
+{w:"advice",p:"noun",vf:"",en:"/ədˈvaɪs/",th:"แอด-ไวซ์",m:"คำแนะนำ",c:"give advice, ask for advice",u:"formal/informal",ex:"Let me give you some advice.",g:"uncountable noun",sy:"guidance, tip, recommendation",an:"",f:1},
+{w:"agenda",p:"noun",vf:"",en:"/əˈdʒɛndə/",th:"อะ-เจน-ดะ",m:"วาระการประชุม",c:"meeting agenda, set the agenda",u:"formal",ex:"Please review the agenda before the meeting starts.",g:"countable noun",sy:"schedule, plan, list of items",an:"",f:1},
+{w:"bonus",p:"noun",vf:"",en:"/ˈboʊnəs/",th:"โบ-นัส",m:"โบนัส, รางวัล",c:"annual bonus, performance bonus",u:"formal/informal",ex:"She received a bonus for exceeding her sales target.",g:"countable noun",sy:"reward, incentive, extra pay",an:"penalty, deduction",f:1},
+{w:"budget",p:"noun",vf:"",en:"/ˈbʌdʒɪt/",th:"บัด-เจท",m:"งบประมาณ",c:"annual budget, budget cut",u:"formal",ex:"We need to stay within the project budget.",g:"countable noun",sy:"funds, allowance, financial plan",an:"",f:1},
+{w:"career",p:"noun",vf:"",en:"/kəˈrɪər/",th:"คะ-เรียร์",m:"อาชีพ, เส้นทางสายอาชีพ",c:"career path, career development",u:"formal/informal",ex:"She built a successful career in finance.",g:"countable noun",sy:"profession, vocation, occupation",an:"",f:1},
+{w:"choice",p:"noun",vf:"",en:"/tʃɔɪs/",th:"ชอยซ์",m:"ทางเลือก",c:"make a choice, good choice",u:"formal/informal",ex:"You have a choice — take it or leave it.",g:"countable noun",sy:"option, alternative, decision",an:"",f:1},
+{w:"client",p:"noun",vf:"",en:"/ˈklaɪənt/",th:"ไคล-เอินท์",m:"ลูกค้า, ผู้ว่าจ้าง",c:"client meeting, client satisfaction",u:"formal",ex:"We need to respond to the client request by tomorrow.",g:"countable noun",sy:"customer, account, consumer",an:"provider, supplier",f:1},
+{w:"colleague",p:"noun",vf:"",en:"/ˈkɒliːɡ/",th:"คอล-ลีก",m:"เพื่อนร่วมงาน",c:"work colleague, senior colleague",u:"formal/informal",ex:"She introduced me to her colleagues at the office.",g:"countable noun",sy:"coworker, teammate, associate",an:"rival, competitor",f:1},
+{w:"confidence",p:"noun",vf:"",en:"/ˈkɒnfɪdəns/",th:"คอน-ฟิ-เดนซ์",m:"ความมั่นใจ",c:"build confidence, with confidence",u:"formal/informal",ex:"She spoke with confidence.",g:"uncountable noun",sy:"self-assurance, boldness, certainty",an:"doubt, insecurity",f:1},
+{w:"contract",p:"noun",vf:"",en:"/ˈkɒntrækt/",th:"คอน-แทรค์ท",m:"สัญญา",c:"sign a contract, breach a contract",u:"formal",ex:"Please read the contract carefully before signing.",g:"countable noun",sy:"agreement, deal, document",an:"",f:1},
+{w:"deadline",p:"noun",vf:"",en:"/ˈdɛdlaɪn/",th:"เดด-ไลน์",m:"วันกำหนดส่งงาน",c:"meet a deadline, tight deadline",u:"formal/informal",ex:"The project deadline is next Friday.",g:"countable noun",sy:"due date, cutoff, time limit",an:"",f:1},
+{w:"decision",p:"noun",vf:"",en:"/dɪˈsɪʒən/",th:"ดิ-ซิ-เชิน",m:"การตัดสินใจ",c:"make a decision, final decision",u:"formal",ex:"It was a difficult decision to make.",g:"countable noun",sy:"choice, verdict, conclusion",an:"",f:1},
+{w:"department",p:"noun",vf:"",en:"/dɪˈpɑːrtmənt/",th:"ดิ-พาร์ท-เมินท์",m:"แผนก, ฝ่าย",c:"HR department, sales department",u:"formal",ex:"She works in the marketing department.",g:"countable noun",sy:"division, section, unit",an:"",f:1},
+{w:"dream",p:"noun/verb",vf:"dream / dreamed / dreamed",en:"/driːm/",th:"ดรีม / ดรีมด์ / ดรีมด์",m:"ความฝัน, ฝัน",c:"follow your dream, dream about",u:"informal",ex:"Never give up on your dreams.",g:"countable noun / intransitive verb",sy:"goal, aspiration, ambition",an:"nightmare, reality",f:1},
+{w:"effort",p:"noun",vf:"",en:"/ˈɛfərt/",th:"เอฟ-เฟิร์ท",m:"ความพยายาม",c:"make an effort, extra effort",u:"formal",ex:"Thank you for your effort.",g:"countable/uncountable noun",sy:"attempt, work, energy",an:"laziness",f:1},
+{w:"employee",p:"noun",vf:"",en:"/ɪmˈplɔɪiː/",th:"เอม-พลอย-อี",m:"พนักงาน, ลูกจ้าง",c:"full-time employee, employee benefits",u:"formal",ex:"The company has over 500 employees worldwide.",g:"countable noun",sy:"worker, staff member, team member",an:"employer, boss",f:1},
+{w:"employer",p:"noun",vf:"",en:"/ɪmˈplɔɪər/",th:"เอม-พลอย-เออร์",m:"นายจ้าง",c:"employer expectations, employer of choice",u:"formal",ex:"Always maintain a good relationship with your employer.",g:"countable noun",sy:"boss, company, organization",an:"employee, worker",f:1},
+{w:"experience",p:"noun/verb",vf:"experience / experienced / experienced",en:"/ɪkˈspɪəriəns/",th:"เอ็กซ์-เพีย-ริ-เอนซ์ / เอ็กซ์-เพีย-ริ-เอนซ์ท์ / เอ็กซ์-เพีย-ริ-เอนซ์ท์",m:"ประสบการณ์",c:"work experience, learning experience",u:"formal",ex:"She has five years of experience.",g:"countable/uncountable noun",sy:"knowledge, practice, background",an:"inexperience",f:1},
+{w:"feedback",p:"noun",vf:"",en:"/ˈfiːdbæk/",th:"ฟีด-แบค",m:"ข้อเสนอแนะ",c:"give feedback, constructive feedback",u:"formal/informal",ex:"The manager gave him very useful feedback.",g:"uncountable noun",sy:"comments, response, evaluation",an:"",f:1},
+{w:"goal",p:"noun",vf:"",en:"/ɡoʊl/",th:"โกล",m:"เป้าหมาย",c:"set a goal, achieve a goal",u:"formal/informal",ex:"My goal is to speak English fluently.",g:"countable noun",sy:"objective, aim, target",an:"",f:1},
+{w:"habit",p:"noun",vf:"",en:"/ˈhæbɪt/",th:"แฮ-บิท",m:"นิสัย, ความเคยชิน",c:"bad habit, develop a habit",u:"informal",ex:"Reading is a great habit to develop.",g:"countable noun",sy:"routine, custom, practice",an:"",f:1},
+{w:"interview",p:"noun/verb",vf:"interview / interviewed / interviewed",en:"/ˈɪntərvjuː/",th:"อิน-เทอ-วิว / อิน-เทอ-วิวด์ / อิน-เทอ-วิวด์",m:"การสัมภาษณ์",c:"job interview, interview skills",u:"formal",ex:"She has a job interview tomorrow morning.",g:"countable noun / transitive verb",sy:"meeting, assessment, evaluation",an:"",f:1},
+{w:"invoice",p:"noun",vf:"",en:"/ˈɪnvɔɪs/",th:"อิน-วอยซ์",m:"ใบแจ้งหนี้",c:"send an invoice, pay an invoice",u:"formal",ex:"Please send the invoice to the finance department.",g:"countable noun",sy:"bill, statement, receipt",an:"",f:1},
+{w:"knowledge",p:"noun",vf:"",en:"/ˈnɒlɪdʒ/",th:"นอล-ลิจ",m:"ความรู้",c:"general knowledge, gain knowledge",u:"formal",ex:"Knowledge is power.",g:"uncountable noun",sy:"information, understanding, expertise",an:"ignorance",f:1},
+{w:"meeting",p:"noun",vf:"",en:"/ˈmiːtɪŋ/",th:"มี-ทิง",m:"การประชุม",c:"team meeting, hold a meeting",u:"formal/informal",ex:"We have a team meeting every Monday morning.",g:"countable noun",sy:"conference, session, discussion",an:"",f:1},
+{w:"office",p:"noun",vf:"",en:"/ˈɒfɪs/",th:"ออ-ฟิส",m:"สำนักงาน",c:"head office, office hours",u:"formal/informal",ex:"She works in the head office in Bangkok.",g:"countable noun",sy:"workplace, headquarters, workspace",an:"",f:1},
+{w:"opportunity",p:"noun",vf:"",en:"/ˌɒpərˈtjuːnɪti/",th:"ออ-เพอ-ทิว-นิ-ที",m:"โอกาส",c:"opportunity to do, miss an opportunity",u:"formal",ex:"This job is a great opportunity.",g:"countable noun",sy:"chance, opening",an:"",f:1},
+{w:"overtime",p:"noun",vf:"",en:"/ˈoʊvərtaɪm/",th:"โอ-เวอร์-ไทม์",m:"การทำงานล่วงเวลา",c:"work overtime, overtime pay",u:"formal/informal",ex:"He often works overtime to meet the project deadline.",g:"uncountable noun",sy:"extra hours, additional time",an:"regular hours",f:1},
+{w:"performance",p:"noun",vf:"",en:"/pərˈfɔːrməns/",th:"เพอ-ฟอร์-เมินซ์",m:"ผลการปฏิบัติงาน",c:"job performance, performance review",u:"formal",ex:"His performance this quarter has been excellent.",g:"uncountable/countable noun",sy:"output, results, productivity",an:"underperformance, failure",f:1},
+{w:"presentation",p:"noun",vf:"",en:"/ˌprɛzənˈteɪʃən/",th:"เพร-เซน-เท-ชัน",m:"การนำเสนอ",c:"give a presentation, business presentation",u:"formal",ex:"She gave an impressive presentation to the board.",g:"countable noun",sy:"talk, speech, demo",an:"",f:1},
+{w:"problem",p:"noun",vf:"",en:"/ˈprɒbləm/",th:"พรอบ-เลม",m:"ปัญหา",c:"solve a problem, no problem",u:"formal/informal",ex:"We need to find a solution to this problem.",g:"countable noun",sy:"issue, challenge, difficulty",an:"solution, answer",f:1},
+{w:"profit",p:"noun",vf:"",en:"/ˈprɒfɪt/",th:"พรอฟ-ฟิท",m:"กำไร",c:"make a profit, profit margin",u:"formal",ex:"The company made a record profit last year.",g:"countable/uncountable noun",sy:"gain, earnings, revenue",an:"loss, deficit",f:1},
+{w:"progress",p:"noun/verb",vf:"progress / progressed / progressed",en:"/ˈprɒɡrɛs/",th:"โปร-เกรส / โปร-เกรสท์ / โปร-เกรสท์",m:"ความก้าวหน้า",c:"make progress, track progress",u:"formal",ex:"You've made great progress this month.",g:"uncountable noun / intransitive verb",sy:"improvement, advance, development",an:"regression, decline",f:1},
+{w:"project",p:"noun",vf:"",en:"/ˈprɒdʒɛkt/",th:"โปร-เจค์ท",m:"โครงการ",c:"manage a project, project deadline",u:"formal/informal",ex:"We are working on three major projects this quarter.",g:"countable noun",sy:"assignment, task, initiative",an:"",f:1},
+{w:"reason",p:"noun",vf:"",en:"/ˈriːzən/",th:"รี-เซิน",m:"เหตุผล",c:"for a reason, give reasons",u:"formal/informal",ex:"What's the reason for your decision?",g:"countable noun",sy:"cause, explanation, purpose",an:"",f:1},
+{w:"salary",p:"noun",vf:"",en:"/ˈsæləri/",th:"แซล-ละ-รี",m:"เงินเดือน",c:"monthly salary, salary raise",u:"formal",ex:"He negotiated a higher salary when joining the new company.",g:"countable noun",sy:"pay, wage, income",an:"",f:1},
+{w:"skill",p:"noun",vf:"",en:"/skɪl/",th:"สกิล",m:"ทักษะ",c:"communication skills, develop a skill",u:"formal/informal",ex:"Leadership is an important skill.",g:"countable noun",sy:"ability, talent, expertise",an:"weakness",f:1},
+{w:"solution",p:"noun",vf:"",en:"/səˈluːʃən/",th:"โซ-ลู-ชัน",m:"วิธีแก้ปัญหา, ทางออก",c:"find a solution, simple solution",u:"formal",ex:"There's always a solution to every problem.",g:"countable noun",sy:"answer, resolution, fix",an:"problem",f:1},
+{w:"success",p:"noun",vf:"",en:"/səkˈsɛs/",th:"ซัค-เซส",m:"ความสำเร็จ",c:"achieve success, key to success",u:"formal",ex:"Hard work is the key to success.",g:"uncountable/countable noun",sy:"achievement, accomplishment, triumph",an:"failure",f:1},
+{w:"task",p:"noun",vf:"",en:"/tæsk/",th:"แทสค์",m:"งาน, ภารกิจ",c:"complete a task, daily tasks",u:"formal/informal",ex:"Please prioritize your tasks for today.",g:"countable noun",sy:"job, assignment, duty",an:"",f:1},
+{w:"value",p:"noun/verb",vf:"value / valued / valued",en:"/ˈvæljuː/",th:"แวล-ยู / แวล-ยูด์ / แวล-ยูด์",m:"คุณค่า, มูลค่า",c:"core values, add value",u:"formal",ex:"Honesty is a value I believe in.",g:"countable noun / transitive verb",sy:"worth, merit, importance",an:"worthlessness",f:1},
+]; // end DB
+
+const DB_MAP = {};
+DB.forEach(d => { DB_MAP[d.w.toLowerCase()] = d; });
+
+// ── State ───────────────────────────────────────────────────────
+let currentUser = null;
+let allWords = [];
+let studyList = [];
+let currentFilter = 'all';
+let searchQ = '';
+let editingId = null;
+let remarkTargetId = null;
+let pendingGenWords = [];
+let dragSrcId = null;
+let selectMode = false;
+let selectedIds = new Set();
+let formRemark = '';
+let flashCards = [];
+let realtimeChannel = null;
+let reloadTimer = null;
+let localOp = false; // suppress realtime reload during local ops
+
+// ── Mappers ─────────────────────────────────────────────────────
+function dbToApp(r) {
+  return {
+    id: r.id, word: r.word||'', pos: r.pos||'', verbForms: r.verb_forms||'',
+    pronEN: r.pron_en||'', pronTH: r.pron_th||'', meaningTH: r.meaning_th||'',
+    collocations: r.collocations||'', usage: r.usage||'', grammar: r.grammar||'',
+    example: r.example||'', synonyms: r.synonyms||'', antonyms: r.antonyms||'',
+    remark: r.remark||'', addedDate: r.added_date||today(), freq: r.freq||99
+  };
+}
+function appToDB(w) {
+  return {
+    user_id: currentUser.id, word: w.word, pos: w.pos||'',
+    verb_forms: w.verbForms||'', pron_en: w.pronEN||'', pron_th: w.pronTH||'',
+    meaning_th: w.meaningTH||'', collocations: w.collocations||'', usage: w.usage||'',
+    grammar: w.grammar||'', example: w.example||'', synonyms: w.synonyms||'',
+    antonyms: w.antonyms||'', remark: w.remark||'', added_date: w.addedDate||today(), freq: w.freq||99
+  };
+}
+function dbWordToApp(d) {
+  return { word:d.w, pos:d.p, verbForms:d.vf, pronEN:d.en, pronTH:d.th,
+           meaningTH:d.m, collocations:d.c, usage:d.u, example:d.ex,
+           grammar:d.g, synonyms:d.sy, antonyms:d.an, remark:'', addedDate:today(), freq:d.f };
+}
+function today() { return new Date().toISOString().slice(0,10); }
+
+// ── AUTH ────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await onLogin(session.user);
+  else showAuth();
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) await onLogin(session.user);
+    else if (event === 'SIGNED_OUT') onLogout();
+  });
+}
+
+function showAuth() {
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+async function onLogin(user) {
+  currentUser = user;
+  document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const av = document.getElementById('user-avatar');
+  av.textContent = user.email.substring(0, 2).toUpperCase();
+  av.title = user.email;
+  showLoading(true, 'Loading your vocabulary...');
+  await loadData();
+  showLoading(false);
+  subscribeRealtime();
+  renderAll(); renderStudy(); updateStats();
+}
+
+function onLogout() {
+  currentUser = null; allWords = []; studyList = [];
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  showAuth();
+}
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pwd   = document.getElementById('auth-password').value;
+  const mode  = document.getElementById('auth-mode').dataset.mode;
+  const errEl = document.getElementById('auth-error');
+  errEl.className = 'auth-error err'; errEl.style.display = 'none';
+  if (!email || !pwd) { errEl.textContent = 'Please enter email and password'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('auth-btn');
+  btn.disabled = true; btn.textContent = 'Loading...';
+  const { error } = mode === 'login'
+    ? await sb.auth.signInWithPassword({ email, password: pwd })
+    : await sb.auth.signUp({ email, password: pwd });
+  btn.disabled = false; btn.textContent = mode === 'login' ? 'Sign In' : 'Sign Up';
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+  else if (mode === 'signup') {
+    errEl.className = 'auth-error ok';
+    errEl.textContent = '✓ Account created! Check your email to confirm, then sign in.';
+    errEl.style.display = 'block';
+  }
+}
+
+function switchAuth(mode) {
+  document.getElementById('auth-mode').dataset.mode = mode;
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.m === mode));
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign In' : 'Sign Up';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+async function signOut() { await sb.auth.signOut(); }
+
+// ── LOADING ──────────────────────────────────────────────────────
+function showLoading(v, msg = 'Syncing...') {
+  document.getElementById('loading-overlay').style.display = v ? 'flex' : 'none';
+  if (v) document.getElementById('loading-msg').textContent = msg;
+}
+
+// ── DATA ─────────────────────────────────────────────────────────
+async function loadData() {
+  const [wRes, sRes] = await Promise.all([
+    sb.from('words').select('*').order('word'),
+    sb.from('study_list').select('word_id, position').order('position')
+  ]);
+  allWords  = (wRes.data || []).map(dbToApp);
+  studyList = (sRes.data || []).map(r => r.word_id);
+}
+
+// ── REALTIME ──────────────────────────────────────────────────────
+function subscribeRealtime() {
+  if (realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('vocab-sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'words' }, onRemoteChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'study_list' }, onRemoteChange)
+    .subscribe(status => {
+      const dot = document.getElementById('sync-dot');
+      if (dot) dot.className = 'sync-dot ' + (status === 'SUBSCRIBED' ? 'online' : 'offline');
+    });
+}
+
+function onRemoteChange() {
+  if (localOp) return;
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(async () => {
+    await loadData(); renderAll(); renderStudy(); updateStats();
+  }, 600);
+}
+
+// ── CRUD: WORDS ──────────────────────────────────────────────────
+async function saveWord() {
+  const word = document.getElementById('f-word').value.trim();
+  const mth  = document.getElementById('f-mth').value.trim();
+  if (!word) { alert('Word is required'); return; }
+  if (!mth)  { alert('Meaning (TH) is required'); return; }
+  const data = {
+    word, pos: document.getElementById('f-pos').value,
+    verbForms: document.getElementById('f-vf').value.trim(),
+    pronEN: document.getElementById('f-pen').value.trim(),
+    pronTH: document.getElementById('f-pth').value.trim(),
+    meaningTH: mth,
+    collocations: document.getElementById('f-col').value.trim(),
+    usage: document.getElementById('f-usage').value.trim(),
+    grammar: document.getElementById('f-gram').value.trim(),
+    example: document.getElementById('f-ex').value.trim(),
+    synonyms: document.getElementById('f-syn').value.trim(),
+    antonyms: document.getElementById('f-ant').value.trim(),
+    remark: formRemark, addedDate: today(), freq: 99
+  };
+  localOp = true; showLoading(true, 'Saving...');
+  if (editingId) {
+    const { error } = await sb.from('words').update(appToDB(data)).eq('id', editingId);
+    if (!error) { const i = allWords.findIndex(w => w.id === editingId); if (i !== -1) allWords[i] = {...allWords[i], ...data}; toast('✏️ Word updated!'); }
+  } else {
+    const { data: ins, error } = await sb.from('words').insert(appToDB(data)).select().single();
+    if (!error) { allWords.push(dbToApp(ins)); toast('✅ Word added!'); }
+    else { toast('Error: ' + error.message); }
+  }
+  showLoading(false); localOp = false;
+  closeModal('modal-word'); renderAll(); renderStudy(); updateStats();
+}
+
+async function deleteWord(id) {
+  if (!confirm('Delete this word?')) return;
+  localOp = true; showLoading(true, 'Deleting...');
+  await sb.from('words').delete().eq('id', id);
+  allWords = allWords.filter(w => w.id !== id);
+  studyList = studyList.filter(s => s !== id);
+  selectedIds.delete(id);
+  showLoading(false); localOp = false;
+  renderAll(); renderStudy(); updateStats(); toast('🗑️ Word deleted');
+}
+
+async function deleteSelected() {
+  if (!selectedIds.size) { toast('No words selected'); return; }
+  if (!confirm(`Delete ${selectedIds.size} selected word(s)?`)) return;
+  const ids = [...selectedIds];
+  localOp = true; showLoading(true, 'Deleting...');
+  await sb.from('words').delete().in('id', ids);
+  allWords = allWords.filter(w => !selectedIds.has(w.id));
+  studyList = studyList.filter(s => !selectedIds.has(s));
+  selectedIds.clear();
+  showLoading(false); localOp = false;
+  toggleSelectMode(); renderAll(); renderStudy(); updateStats();
+  toast(`🗑️ ${ids.length} words deleted`);
+}
+
+// ── CRUD: STUDY LIST ──────────────────────────────────────────────
+async function toggleStudy(id) {
+  localOp = true;
+  if (studyList.includes(id)) {
+    await sb.from('study_list').delete().eq('word_id', id).eq('user_id', currentUser.id);
+    studyList = studyList.filter(s => s !== id);
+  } else {
+    await sb.from('study_list').insert({ user_id: currentUser.id, word_id: id, position: studyList.length });
+    studyList.push(id);
+  }
+  localOp = false; renderAll(); renderStudy(); updateStats(); renderChips();
+}
+
+async function clearMemorizedFromStudy() {
+  const toRemove = studyList.filter(id => { const w = allWords.find(x => x.id === id); return w && w.remark === 'ok'; });
+  if (!toRemove.length) { toast('No memorized words in study list'); return; }
+  if (!confirm(`Remove ${toRemove.length} memorized word(s) from the studying list?`)) return;
+  localOp = true; showLoading(true, 'Clearing...');
+  await sb.from('study_list').delete().in('word_id', toRemove).eq('user_id', currentUser.id);
+  studyList = studyList.filter(id => !toRemove.includes(id));
+  showLoading(false); localOp = false;
+  renderStudy(); updateStats(); toast(`✓ Removed ${toRemove.length} memorized word(s)`);
+}
+
+async function addToStudyByRemark(remark) {
+  document.getElementById('remark-drop').classList.remove('open');
+  const matches = allWords.filter(w => (remark === 'none' ? !w.remark : w.remark === remark) && !studyList.includes(w.id));
+  if (!matches.length) { toast('No new words for this remark type'); return; }
+  localOp = true; showLoading(true, 'Adding...');
+  const rows = matches.map((w, i) => ({ user_id: currentUser.id, word_id: w.id, position: studyList.length + i }));
+  await sb.from('study_list').insert(rows);
+  studyList.push(...matches.map(w => w.id));
+  showLoading(false); localOp = false;
+  renderStudy(); updateStats(); renderChips();
+  const lbl = remark === 'partial' ? 'Partially Remembered' : remark === 'no' ? 'Not Yet' : 'Not Set';
+  toast(`🎯 Added ${matches.length} "${lbl}" word(s)`);
+}
+
+// ── REMARK ────────────────────────────────────────────────────────
+function openRemarkModal(id) {
+  remarkTargetId = id;
+  const w = allWords.find(x => x.id === id);
+  document.getElementById('remark-word-label').textContent = `Remark: "${w?.word}"`;
+  document.getElementById('modal-remark').classList.add('open');
+}
+async function setRemark(r) {
+  const w = allWords.find(x => x.id === remarkTargetId);
+  if (w) {
+    localOp = true; w.remark = r;
+    await sb.from('words').update({ remark: r }).eq('id', remarkTargetId);
+    localOp = false; renderAll(); renderStudy(); updateStats();
+  }
+  closeModal('modal-remark');
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────
+function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function getAvailableDB() { const used=new Set(allWords.map(w=>w.word.toLowerCase())); return shuffle(DB.filter(d=>!used.has(d.w.toLowerCase()))); }
+function openGenModal() {
+  document.getElementById('gen-num').value = document.getElementById('gen-count').value || 10;
+  previewGen(); document.getElementById('modal-gen').classList.add('open');
+}
+function previewGen() {
+  const avail = getAvailableDB();
+  const n = Math.min(parseInt(document.getElementById('gen-num').value)||10, avail.length);
+  pendingGenWords = avail.slice(0, n);
+  document.getElementById('gen-avail-msg').textContent = avail.length + ' words available (not yet added)';
+  document.getElementById('gen-preview-chips').innerHTML = pendingGenWords.map(d=>`<span class="pchip">${esc(d.w)}</span>`).join('');
+}
+async function confirmGenerate() {
+  if (!pendingGenWords.length) { toast('No words to add'); return; }
+  localOp = true; showLoading(true, 'Adding words...');
+  const rows = pendingGenWords.map(d => appToDB(dbWordToApp(d)));
+  const { data: inserted, error } = await sb.from('words').insert(rows).select();
+  if (!error && inserted) {
+    const newWords = inserted.map(dbToApp);
+    allWords.push(...newWords);
+    const sRows = newWords.map((w, i) => ({ user_id: currentUser.id, word_id: w.id, position: studyList.length + i }));
+    await sb.from('study_list').insert(sRows);
+    studyList.push(...newWords.map(w => w.id));
+    toast(`✨ Added ${newWords.length} words!`);
+  } else if (error) { toast('Error: ' + error.message); }
+  showLoading(false); localOp = false;
+  closeModal('modal-gen'); renderAll(); renderStudy(); updateStats();
+}
+
+// ── BULK SELECT ───────────────────────────────────────────────────
+function toggleSelectMode() {
+  selectMode = !selectMode; selectedIds.clear();
+  const btn = document.getElementById('select-btn');
+  btn.textContent = selectMode ? '✕ Cancel Select' : '☐ Select';
+  btn.className = selectMode ? 'btn btn-select-active' : 'btn btn-outline';
+  document.getElementById('bulk-bar').classList.toggle('visible', selectMode);
+  renderAll();
+}
+function toggleCardSelect(id, e) { if (!selectMode) return; e.stopPropagation(); selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id); document.getElementById('sel-count').textContent=selectedIds.size; const c=document.getElementById('card-'+id); if(c){c.classList.toggle('selected',selectedIds.has(id));const ck=c.querySelector('.select-check');if(ck)ck.textContent=selectedIds.has(id)?'✓':'';} }
+function selectAll() { filterWords().forEach(w=>selectedIds.add(w.id)); document.getElementById('sel-count').textContent=selectedIds.size; document.querySelectorAll('.wcard.selectable').forEach(c=>{c.classList.add('selected');const ck=c.querySelector('.select-check');if(ck)ck.textContent='✓';}); }
+function deselectAll() { selectedIds.clear(); document.getElementById('sel-count').textContent=0; document.querySelectorAll('.wcard.selectable').forEach(c=>{c.classList.remove('selected');const ck=c.querySelector('.select-check');if(ck)ck.textContent='';}); }
+
+// ── ADD WORD FORM ──────────────────────────────────────────────────
+function openAddModal() {
+  editingId = null; formRemark = '';
+  document.getElementById('modal-word-title').textContent = 'Add New Word';
+  clearForm(); document.getElementById('modal-word').classList.add('open');
+}
+function openEditModal(id) {
+  const w = allWords.find(x => x.id === id); if (!w) return;
+  editingId = id; formRemark = w.remark || '';
+  document.getElementById('modal-word-title').textContent = 'Edit Word';
+  document.getElementById('f-word').value = w.word;
+  document.getElementById('f-pos').value  = w.pos || '';
+  document.getElementById('f-vf').value   = w.verbForms || '';
+  document.getElementById('f-pen').value  = w.pronEN || '';
+  document.getElementById('f-pth').value  = w.pronTH || '';
+  document.getElementById('f-mth').value  = w.meaningTH || '';
+  document.getElementById('f-col').value  = w.collocations || '';
+  document.getElementById('f-usage').value= w.usage || '';
+  document.getElementById('f-gram').value = w.grammar || '';
+  document.getElementById('f-ex').value   = w.example || '';
+  document.getElementById('f-syn').value  = w.synonyms || '';
+  document.getElementById('f-ant').value  = w.antonyms || '';
+  const h = document.getElementById('autofill-hint'); h.className='autofill-hint'; h.textContent='';
+  updateRemarkPicker(); document.getElementById('modal-word').classList.add('open');
+}
+function clearForm() {
+  ['f-word','f-vf','f-pen','f-pth','f-mth','f-col','f-usage','f-gram','f-ex','f-syn','f-ant'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-pos').value='';
+  const h=document.getElementById('autofill-hint'); h.className='autofill-hint'; h.textContent='';
+  formRemark=''; updateRemarkPicker();
+}
+function autoFill(val) {
+  const hint=document.getElementById('autofill-hint'); const key=val.trim().toLowerCase(); if(!key){hint.className='autofill-hint';hint.textContent='';return;}
+  const db=DB_MAP[key];
+  if(db){document.getElementById('f-pos').value=db.p||'';document.getElementById('f-vf').value=db.vf||'';document.getElementById('f-pen').value=db.en||'';document.getElementById('f-pth').value=db.th||'';document.getElementById('f-mth').value=db.m||'';document.getElementById('f-col').value=db.c||'';document.getElementById('f-usage').value=db.u||'';document.getElementById('f-gram').value=db.g||'';document.getElementById('f-ex').value=db.ex||'';document.getElementById('f-syn').value=db.sy||'';document.getElementById('f-ant').value=db.an||'';hint.className='autofill-hint found';hint.textContent='✓ Auto-filled from database';}
+  else{hint.className='autofill-hint custom';hint.textContent='✎ New word — fill in details manually';}
+}
+function selectRemark(r){formRemark=(formRemark===r)?'':r;updateRemarkPicker();}
+function updateRemarkPicker(){document.querySelectorAll('.rp-opt').forEach(el=>{const m=el.getAttribute('onclick').match(/'(\w*)'/);const r=m?m[1]:'';el.classList.toggle('sel',r===formRemark&&formRemark!=='');});}
+
+// ── REMARK DROPDOWN ───────────────────────────────────────────────
+function toggleRemarkDrop(){document.getElementById('remark-drop').classList.toggle('open');}
+document.addEventListener('click',e=>{const w=document.getElementById('remark-add-wrap');if(w&&!w.contains(e.target))document.getElementById('remark-drop').classList.remove('open');});
+
+// ── SPEECH ────────────────────────────────────────────────────────
+function speakWord(word){if(!window.speechSynthesis){toast('TTS not supported');return;}window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(word);u.lang='en-US';u.rate=0.82;window.speechSynthesis.speak(u);}
+
+// ── VERB FORMS DISPLAY ────────────────────────────────────────────
+function renderVerbForms(w){
+  if(!w.verbForms)return w.pronTH?`<div class="word-pron-th">${esc(w.pronTH)}</div>`:'';
+  const f=w.verbForms.split(' / '),p=w.pronTH?w.pronTH.split(' / '):[];
+  if(p.length>1&&p.length===f.length)return`<div class="vf-grid">${f.map((vf,i)=>`<div class="vf-cell"><div class="word-vf">${esc(vf.trim())}</div>${p[i]?`<div class="word-pron-th">${esc(p[i].trim())}</div>`:''}</div>`).join('')}</div>`;
+  return`<div class="word-vf">${esc(w.verbForms)}</div>${p[0]?`<div class="word-pron-th">${esc(p[0])}</div>`:''}`;
+}
+
+// ── RENDER HELPERS ────────────────────────────────────────────────
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function remarkClass(r){return r==='ok'?'remark-ok':r==='partial'?'remark-partial':r==='no'?'remark-no':'remark-none';}
+function remarkLabel(r){return r==='ok'?'✓ Memorized':r==='partial'?'~ Partially Remembered':r==='no'?'✗ Not Yet':'— Remark';}
+function cardBorder(r){return r==='ok'?'r-ok':r==='partial'?'r-partial':r==='no'?'r-no':'';}
+function detRow(l,v){if(!v)return'';return`<div class="detail-item"><div class="detail-label">${l}</div><div class="detail-value">${esc(v)}</div></div>`;}
+function detFull(l,v){if(!v)return'';return`<div class="detail-item full"><div class="detail-label">${l}</div><div class="detail-value">${esc(v)}</div></div>`;}
+
+function renderWordCard(w, withDrag=false) {
+  const inStudy=studyList.includes(w.id);
+  const isSel=selectedIds.has(w.id);
+  const drag=withDrag?`draggable="true" ondragstart="dndStart(event,'${w.id}')" ondragover="dndOver(event)" ondrop="dndDrop(event,'${w.id}')" ondragend="dndEnd(event)"`:'' ;
+  const selClass=(!withDrag&&selectMode)?'selectable':'';
+  const selectedClass=(!withDrag&&isSel)?'selected':'';
+  const cardClass=withDrag?`study-card ${cardBorder(w.remark)}`:`wcard ${cardBorder(w.remark)} ${selClass} ${selectedClass}`;
+  const cardClick=(!withDrag&&selectMode)?`onclick="toggleCardSelect('${w.id}',event)"`:'';
+  return`<div class="${cardClass}" id="card-${w.id}" ${drag} ${cardClick}>
+    ${(!withDrag&&selectMode)?`<div class="select-check">${isSel?'✓':''}</div>`:''}
+    <div class="wcard-top" style="${selectMode&&!withDrag?'padding-left:28px':''}">
+      <div class="wcard-info">
+        ${withDrag?'<span class="drag-handle">⠿</span>':''}
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <span class="word-title">${esc(w.word)}</span><span class="word-pos">${esc(w.pos)}</span>
+          <button class="speak-btn" onclick="speakWord('${w.word.replace(/'/g,"\\'")}');event.stopPropagation()" title="Listen">🔊</button>
+        </div>
+        ${renderVerbForms(w)}
+        ${w.pronEN?`<div class="word-pron">${esc(w.pronEN)}</div>`:''}
+        <div class="word-meaning">${esc(w.meaningTH)}</div>
+      </div>
+      <div class="wcard-actions">
+        <button class="remark-btn ${remarkClass(w.remark)}" onclick="openRemarkModal('${w.id}')">${remarkLabel(w.remark)}</button>
+        <div class="action-row">
+          <button class="btn btn-ghost btn-icon" title="Edit" onclick="openEditModal('${w.id}');event.stopPropagation()">✏️</button>
+          ${withDrag
+            ?`<button class="btn btn-ghost btn-icon" title="Remove from study" onclick="toggleStudy('${w.id}')">✕</button>`
+            :`<button class="btn btn-ghost btn-icon" title="${inStudy?'In study list':'Add to study'}" onclick="toggleStudy('${w.id}');event.stopPropagation()" style="color:${inStudy?'var(--success)':'var(--muted)'}">🎯</button>`}
+          <button class="btn btn-ghost btn-icon" title="Delete" onclick="deleteWord('${w.id}');event.stopPropagation()">🗑️</button>
+        </div>
+      </div>
+    </div>
+    <button class="expand-btn" onclick="toggleExpand(this);event.stopPropagation()">▼ Show details</button>
+    <div class="wcard-expand">
+      <div class="detail-grid">
+        ${detRow('Collocations',w.collocations)}${detRow('Usage',w.usage)}${detRow('Grammar Behavior',w.grammar)}
+        ${detFull('Example Sentences',w.example)}${detRow('Synonyms',w.synonyms)}${detRow('Antonyms',w.antonyms)}
+        <div class="detail-item"><div class="detail-label">Added</div><div class="detail-value">${w.addedDate||''}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+function toggleExpand(btn){const e=btn.nextElementSibling;const o=e.classList.toggle('open');btn.textContent=o?'▲ Hide details':'▼ Show details';}
+
+// ── SEARCH & FILTER ───────────────────────────────────────────────
+function onSearch(q){searchQ=q.toLowerCase();renderAll();}
+function setFilter(f,el){currentFilter=f;document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderAll();}
+function filterWords(){
+  return allWords.filter(w=>{
+    if(searchQ){const h=[w.word,w.meaningTH,w.pos,w.synonyms,w.antonyms,w.example].join(' ').toLowerCase();if(!h.includes(searchQ))return false;}
+    if(currentFilter==='ok')return w.remark==='ok';
+    if(currentFilter==='partial')return w.remark==='partial';
+    if(currentFilter==='no')return w.remark==='no';
+    if(currentFilter==='none')return!w.remark;
+    return true;
+  });
+}
+
+// ── RENDER PAGES ──────────────────────────────────────────────────
+function renderAll(){
+  const words=filterWords().sort((a,b)=>a.word.localeCompare(b.word));
+  const grid=document.getElementById('all-grid');
+  if(!words.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📭</div><p>${allWords.length?'No words match your filter.':'No words yet. Generate or Add Word to get started!'}</p></div>`;return;}
+  grid.innerHTML=words.map(w=>renderWordCard(w,false)).join('');
+}
+function renderStudy(){
+  const sWords=studyList.map(id=>allWords.find(w=>w.id===id)).filter(Boolean);
+  document.getElementById('study-count').textContent=sWords.length;
+  const grid=document.getElementById('study-grid');
+  if(!sWords.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🎯</div><p>No words in your study list.<br>Click "Add / Remove Words" or Generate.</p></div>`;return;}
+  grid.innerHTML=sWords.map(w=>renderWordCard(w,true)).join('');
+}
+function updateStats(){
+  const ok=allWords.filter(w=>w.remark==='ok').length;
+  const partial=allWords.filter(w=>w.remark==='partial').length;
+  const no=allWords.filter(w=>w.remark==='no').length;
+  document.getElementById('s-total').textContent=allWords.length;
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-partial').textContent=partial;
+  document.getElementById('s-no').textContent=no;
+  document.getElementById('hs-total').textContent=allWords.length;
+  document.getElementById('hs-study').textContent=studyList.length;
+  document.getElementById('hs-ok').textContent=ok;
+  document.getElementById('badge-all').textContent=allWords.length;
+  document.getElementById('badge-study').textContent=studyList.length;
+}
+function renderChips(){
+  const el=document.getElementById('word-chips');if(!el)return;
+  if(!allWords.length){el.innerHTML='<span style="color:var(--muted);font-size:.85rem">No words yet.</span>';return;}
+  el.innerHTML=[...allWords].sort((a,b)=>a.word.localeCompare(b.word)).map(w=>`<span class="chip ${studyList.includes(w.id)?'in-study':''}" onclick="toggleStudy('${w.id}')">${esc(w.word)}</span>`).join('');
+}
+
+// ── STUDY SELECTOR ────────────────────────────────────────────────
+function toggleSelector(){const el=document.getElementById('study-selector');const v=el.style.display!=='none';el.style.display=v?'none':'block';if(!v)renderChips();}
+
+// ── NAV ───────────────────────────────────────────────────────────
+function switchPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active'); el.classList.add('active');
+  if(name==='study'){renderStudy();renderChips();}
+  if(name==='flash'){document.getElementById('flash-info').textContent=allWords.length?`${allWords.length} words available`:'No vocabulary yet';}
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// ── DRAG AND DROP ─────────────────────────────────────────────────
+function dndStart(e,id){dragSrcId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dndOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.study-card').forEach(c=>c.classList.remove('drag-over'));e.currentTarget.classList.add('drag-over');}
+async function dndDrop(e,targetId){
+  e.preventDefault(); if(dragSrcId===targetId)return;
+  const si=studyList.indexOf(dragSrcId),ti=studyList.indexOf(targetId);
+  if(si<0||ti<0)return;
+  studyList.splice(si,1); studyList.splice(ti,0,dragSrcId);
+  renderStudy();
+  localOp=true;
+  await Promise.all(studyList.map((id,pos)=>sb.from('study_list').update({position:pos}).eq('word_id',id).eq('user_id',currentUser.id)));
+  localOp=false;
+}
+function dndEnd(e){document.querySelectorAll('.study-card').forEach(c=>{c.classList.remove('dragging');c.classList.remove('drag-over');});dragSrcId=null;}
+
+// ── FLASHCARDS ────────────────────────────────────────────────────
+function randomFlash(){
+  if(!allWords.length){toast('No vocabulary yet');return;}
+  const count=parseInt(document.getElementById('flash-count').value)||10;
+  flashCards=shuffle([...allWords]).slice(0,Math.min(count,allWords.length));
+  renderFlash();
+}
+function clearFlash(){flashCards=[];document.getElementById('flash-grid').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🃏</div><p>Click <strong>Random</strong> to draw flashcards.</p></div>`;document.getElementById('flash-info').textContent='';}
+function flipCard(i){document.getElementById('fc-'+i).classList.toggle('flipped');}
+function renderFlash(){
+  const grid=document.getElementById('flash-grid');
+  document.getElementById('flash-info').textContent=`Showing ${flashCards.length} of ${allWords.length} words`;
+  grid.innerHTML=flashCards.map((w,i)=>`
+    <div class="flashcard" id="fc-${i}" onclick="flipCard(${i})">
+      <div class="flashcard-inner">
+        <div class="fc-front"><div class="fc-word">${esc(w.word)}</div><div class="fc-pos">${esc(w.pos||'')}</div><div class="fc-hint">Click to reveal</div></div>
+        <div class="fc-back">
+          <div class="fc-back-word">${esc(w.word)}</div>
+          ${w.pronEN?`<div class="fc-pron-en">${esc(w.pronEN)}</div>`:''}
+          ${w.pronTH?`<div class="fc-pron-th">${esc(w.pronTH)}</div>`:''}
+          ${w.meaningTH?`<div class="fc-meaning">${esc(w.meaningTH)}</div>`:''}
+          ${w.example?`<div class="fc-example">"${esc(w.example)}"</div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2800);}
+
+// ── START ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
