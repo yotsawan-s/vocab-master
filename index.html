@@ -276,6 +276,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       </div>
     </div>
 
+    <button class="btn btn-outline" onclick="openInfoModal()" title="What does each field mean?">ℹ️ Info</button>
     <button class="btn btn-outline" id="select-btn" onclick="toggleSelectMode()">☐ Select</button>
     <div class="gen-group">
       <select id="gen-count"><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option><option>50</option></select>
@@ -288,6 +289,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div style="display:flex;gap:8px">
       <button class="btn btn-sm" style="background:#fff;color:#5b21b6;border:1px solid #fff;font-weight:700" onclick="selectAll()">Select All</button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.6);font-weight:700" onclick="deselectAll()">Deselect All</button>
+      <button class="btn btn-sm" style="background:#fff;color:#5b21b6;border:1px solid #fff;font-weight:700" onclick="openBulkRemarkModal()">🏷️ Set Remark</button>
       <button class="btn btn-danger btn-sm" onclick="deleteSelected()">🗑️ Delete Selected</button>
     </div>
   </div>
@@ -359,6 +361,34 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="gen-avail" id="gen-avail-msg"></div>
     <div class="gen-preview"><h4>Preview — words to be added</h4><div class="preview-chips" id="gen-preview-chips"></div></div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-gen')">Cancel</button><button class="btn btn-success" onclick="confirmGenerate()">✨ Add These Words</button></div>
+  </div>
+</div>
+
+<!-- MODAL: INFO (Vocab field descriptions) -->
+<div class="overlay" id="modal-info">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr">
+      <div class="modal-title">ℹ️ Vocab Field Information</div>
+      <button class="modal-close" onclick="closeModal('modal-info')">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:.88rem;line-height:1.55">
+      <div><span class="detail-label">Word</span><div style="margin-top:4px">คำศัพท์ภาษาอังกฤษหลักที่ต้องการเรียนรู้ — แสดงเป็นหัวข้อใหญ่ของการ์ดแต่ละใบ</div></div>
+      <div><span class="detail-label">Part of Speech</span><div style="margin-top:4px">ชนิดของคำ เช่น verb (กริยา), noun (คำนาม), adjective (คำคุณศัพท์), adverb (คำกริยาวิเศษณ์), phrasal verb (กริยาวลี)</div></div>
+      <div><span class="detail-label">Verb Forms</span><div style="margin-top:4px">รูปของกริยา 3 ช่อง: base / past / past participle — ตัวอย่าง <em>achieve / achieved / achieved</em></div></div>
+      <div><span class="detail-label">Pronunciation (EN)</span><div style="margin-top:4px">คำอ่านในรูปแบบสัทอักษรสากล (IPA) เช่น /əˈtʃiːv/ ใช้ในการออกเสียงตามมาตรฐานสากล</div></div>
+      <div><span class="detail-label">Pronunciation (TH)</span><div style="margin-top:4px">คำอ่านเทียบเป็นภาษาไทย เช่น <em>อะ-ชีฟ</em> ช่วยให้ออกเสียงได้ง่ายขึ้น</div></div>
+      <div><span class="detail-label">Meaning (TH)</span><div style="margin-top:4px">ความหมายของคำเป็นภาษาไทย ฟิลด์นี้บังคับต้องกรอก เพื่อให้เข้าใจคำได้ทันที</div></div>
+      <div><span class="detail-label">Collocations</span><div style="margin-top:4px">คำที่มักใช้คู่กันบ่อย ๆ ในภาษาอังกฤษ เช่น <em>achieve a goal</em>, <em>achieve success</em> ช่วยให้พูดเป็นธรรมชาติ</div></div>
+      <div><span class="detail-label">Usage</span><div style="margin-top:4px">บริบทการใช้คำ — formal (ทางการ), informal (ไม่เป็นทางการ), both (ใช้ได้ทั้งสองแบบ)</div></div>
+      <div><span class="detail-label">Grammar Behavior</span><div style="margin-top:4px">พฤติกรรมทางไวยากรณ์ของคำ เช่น transitive verb (กริยาที่ต้องมีกรรม), intransitive verb (ไม่ต้องมีกรรม), linking verb เป็นต้น</div></div>
+      <div><span class="detail-label">Example Sentences</span><div style="margin-top:4px">ประโยคตัวอย่างที่ใช้คำนี้จริง ๆ เพื่อเห็นภาพการใช้งานในประโยค</div></div>
+      <div><span class="detail-label">Synonyms</span><div style="margin-top:4px">คำที่มีความหมายเหมือนหรือใกล้เคียงกัน ใช้แทนกันได้ในบางบริบท</div></div>
+      <div><span class="detail-label">Antonyms</span><div style="margin-top:4px">คำที่มีความหมายตรงกันข้าม ช่วยให้เข้าใจคำได้ลึกขึ้น</div></div>
+      <div><span class="detail-label">Remark</span><div style="margin-top:4px">สถานะการจำคำนี้: <strong>✓ Memorized</strong> (จำได้แล้ว), <strong>~ Partially Remembered</strong> (จำได้บางส่วน), <strong>✗ Not Yet</strong> (ยังจำไม่ได้)</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-info')">Got it</button>
+    </div>
   </div>
 </div>
 
@@ -578,6 +608,57 @@ const DB = [
 {w:"success",p:"noun",vf:"",en:"/səkˈsɛs/",th:"ซัค-เซส",m:"ความสำเร็จ",c:"achieve success, key to success",u:"formal",ex:"Hard work is the key to success.",g:"uncountable/countable noun",sy:"achievement, accomplishment, triumph",an:"failure",f:1},
 {w:"task",p:"noun",vf:"",en:"/tæsk/",th:"แทสค์",m:"งาน, ภารกิจ",c:"complete a task, daily tasks",u:"formal/informal",ex:"Please prioritize your tasks for today.",g:"countable noun",sy:"job, assignment, duty",an:"",f:1},
 {w:"value",p:"noun/verb",vf:"value / valued / valued",en:"/ˈvæljuː/",th:"แวล-ยู / แวล-ยูด์ / แวล-ยูด์",m:"คุณค่า, มูลค่า",c:"core values, add value",u:"formal",ex:"Honesty is a value I believe in.",g:"countable noun / transitive verb",sy:"worth, merit, importance",an:"worthlessness",f:1},
+// ===== Added: 50 common words =====
+{w:"admit",p:"verb",vf:"admit / admitted / admitted",en:"/ədˈmɪt/",th:"แอด-มิท / แอด-มิท-เท็ด / แอด-มิท-เท็ด",m:"ยอมรับ, สารภาพ",c:"admit a mistake, admit defeat",u:"formal/informal",ex:"He admitted that he was wrong.",g:"transitive verb",sy:"confess, acknowledge, accept",an:"deny, reject",f:1},
+{w:"afford",p:"verb",vf:"afford / afforded / afforded",en:"/əˈfɔːrd/",th:"อะ-ฟอร์ด / อะ-ฟอร์-เด็ด / อะ-ฟอร์-เด็ด",m:"มีเงินพอจ่าย, มีกำลังพอ",c:"afford a car, can't afford to lose",u:"formal/informal",ex:"I can't afford a new car right now.",g:"transitive verb + to-infinitive",sy:"manage, bear, sustain",an:"",f:1},
+{w:"announce",p:"verb",vf:"announce / announced / announced",en:"/əˈnaʊns/",th:"อะ-เนาซ์ / อะ-เนาซ์ท์ / อะ-เนาซ์ท์",m:"ประกาศ, แจ้งให้ทราบ",c:"announce a decision, announce results",u:"formal",ex:"The company announced a new product.",g:"transitive verb",sy:"declare, proclaim, reveal",an:"conceal, hide",f:1},
+{w:"appreciate",p:"verb",vf:"appreciate / appreciated / appreciated",en:"/əˈpriːʃieɪt/",th:"อะ-พรี-ชิ-เอท / อะ-พรี-ชิ-เอ-เท็ด / อะ-พรี-ชิ-เอ-เท็ด",m:"ซาบซึ้ง, เห็นคุณค่า",c:"appreciate help, appreciate your time",u:"formal/informal",ex:"I really appreciate your support.",g:"transitive verb",sy:"value, recognize, treasure",an:"disregard, dismiss",f:1},
+{w:"argue",p:"verb",vf:"argue / argued / argued",en:"/ˈɑːrɡjuː/",th:"อาร์-กิว / อาร์-กิวด์ / อาร์-กิวด์",m:"โต้แย้ง, เถียง",c:"argue with someone, argue about money",u:"formal/informal",ex:"They argued for hours about the budget.",g:"intransitive verb + with/about",sy:"dispute, debate, quarrel",an:"agree, concur",f:1},
+{w:"arrange",p:"verb",vf:"arrange / arranged / arranged",en:"/əˈreɪndʒ/",th:"อะ-เรนจ์ / อะ-เรนจ์ด์ / อะ-เรนจ์ด์",m:"จัดเตรียม, จัดการ",c:"arrange a meeting, arrange flowers",u:"formal/informal",ex:"Can you arrange a taxi for me?",g:"transitive verb",sy:"organize, plan, set up",an:"disorganize, cancel",f:1},
+{w:"arrive",p:"verb",vf:"arrive / arrived / arrived",en:"/əˈraɪv/",th:"อะ-ไรฟ / อะ-ไรฟด์ / อะ-ไรฟด์",m:"มาถึง",c:"arrive on time, arrive at the airport",u:"formal/informal",ex:"The train arrived ten minutes late.",g:"intransitive verb + at/in",sy:"reach, get to, come",an:"depart, leave",f:1},
+{w:"assume",p:"verb",vf:"assume / assumed / assumed",en:"/əˈsuːm/",th:"อะ-ซูม / อะ-ซูมด์ / อะ-ซูมด์",m:"สันนิษฐาน, คิดเอาเอง",c:"assume responsibility, assume the worst",u:"formal",ex:"Don't assume she knows about the change.",g:"transitive verb",sy:"suppose, presume, guess",an:"know, verify",f:1},
+{w:"attempt",p:"verb/noun",vf:"attempt / attempted / attempted",en:"/əˈtɛmpt/",th:"อะ-เท็มพ์ท์ / อะ-เท็มพ์-เท็ด / อะ-เท็มพ์-เท็ด",m:"พยายาม, ความพยายาม",c:"attempt a task, first attempt",u:"formal",ex:"She attempted to solve the puzzle.",g:"transitive verb; countable noun",sy:"try, endeavor, effort",an:"give up, abandon",f:1},
+{w:"borrow",p:"verb",vf:"borrow / borrowed / borrowed",en:"/ˈbɒroʊ/",th:"บอร์-โร / บอร์-โรด์ / บอร์-โรด์",m:"ยืม",c:"borrow money, borrow a book",u:"informal",ex:"Can I borrow your pen?",g:"transitive verb + from",sy:"loan, take on loan",an:"lend, return",f:1},
+{w:"celebrate",p:"verb",vf:"celebrate / celebrated / celebrated",en:"/ˈsɛləbreɪt/",th:"เซล-ละ-เบรท / เซล-ละ-เบร-เท็ด / เซล-ละ-เบร-เท็ด",m:"ฉลอง, เฉลิมฉลอง",c:"celebrate a birthday, celebrate success",u:"formal/informal",ex:"We celebrated her promotion last night.",g:"transitive/intransitive verb",sy:"commemorate, honor, rejoice",an:"mourn, ignore",f:1},
+{w:"complain",p:"verb",vf:"complain / complained / complained",en:"/kəmˈpleɪn/",th:"คอม-เพลน / คอม-เพลนด์ / คอม-เพลนด์",m:"บ่น, ร้องเรียน",c:"complain about service, complain to manager",u:"formal/informal",ex:"He complained about the noise.",g:"intransitive verb + about/to",sy:"grumble, protest, object",an:"praise, compliment",f:1},
+{w:"connect",p:"verb",vf:"connect / connected / connected",en:"/kəˈnɛkt/",th:"คอน-เน็คท์ / คอน-เน็ค-เท็ด / คอน-เน็ค-เท็ด",m:"เชื่อมต่อ, ติดต่อ",c:"connect to wifi, connect with people",u:"formal/informal",ex:"This cable connects the printer to the computer.",g:"transitive/intransitive verb",sy:"link, join, attach",an:"disconnect, separate",f:1},
+{w:"convince",p:"verb",vf:"convince / convinced / convinced",en:"/kənˈvɪns/",th:"คอน-วินซ์ / คอน-วินซ์ท์ / คอน-วินซ์ท์",m:"โน้มน้าว, ทำให้เชื่อ",c:"convince someone, convince the team",u:"formal/informal",ex:"She convinced him to apply for the job.",g:"transitive verb + to-infinitive",sy:"persuade, sway, assure",an:"dissuade, discourage",f:1},
+{w:"depend",p:"verb",vf:"depend / depended / depended",en:"/dɪˈpɛnd/",th:"ดิ-เพนด์ / ดิ-เพน-เด็ด / ดิ-เพน-เด็ด",m:"ขึ้นอยู่กับ, พึ่งพา",c:"depend on someone, it depends",u:"formal/informal",ex:"Success depends on hard work.",g:"intransitive verb + on/upon",sy:"rely, count on, hinge on",an:"",f:1},
+{w:"design",p:"verb/noun",vf:"design / designed / designed",en:"/dɪˈzaɪn/",th:"ดิ-ไซน์ / ดิ-ไซน์ด์ / ดิ-ไซน์ด์",m:"ออกแบบ, การออกแบบ",c:"design a website, modern design",u:"formal/informal",ex:"She designed the new logo.",g:"transitive verb; countable noun",sy:"create, plan, devise",an:"",f:1},
+{w:"encourage",p:"verb",vf:"encourage / encouraged / encouraged",en:"/ɪnˈkɜːrɪdʒ/",th:"เอน-เคอ-ริจ / เอน-เคอ-ริจด์ / เอน-เคอ-ริจด์",m:"ให้กำลังใจ, สนับสนุน",c:"encourage employees, encourage learning",u:"formal/informal",ex:"Her parents encouraged her to study art.",g:"transitive verb + to-infinitive",sy:"motivate, inspire, support",an:"discourage, deter",f:1},
+{w:"expect",p:"verb",vf:"expect / expected / expected",en:"/ɪkˈspɛkt/",th:"เอ็ก-สเป็คท์ / เอ็ก-สเป็ค-เท็ด / เอ็ก-สเป็ค-เท็ด",m:"คาดหวัง, คาดการณ์",c:"expect a reply, expect good results",u:"formal/informal",ex:"We expect the package to arrive tomorrow.",g:"transitive verb",sy:"anticipate, await, predict",an:"doubt, dismiss",f:1},
+{w:"explore",p:"verb",vf:"explore / explored / explored",en:"/ɪkˈsplɔːr/",th:"เอ็ก-สพลอร์ / เอ็ก-สพลอร์ด์ / เอ็ก-สพลอร์ด์",m:"สำรวจ, ค้นหา",c:"explore options, explore a city",u:"formal/informal",ex:"Let's explore different solutions.",g:"transitive verb",sy:"investigate, examine, search",an:"ignore, overlook",f:1},
+{w:"focus",p:"verb/noun",vf:"focus / focused / focused",en:"/ˈfoʊkəs/",th:"โฟ-คัส / โฟ-คัสท์ / โฟ-คัสท์",m:"มุ่งเน้น, สมาธิ",c:"focus on goals, main focus",u:"formal/informal",ex:"You need to focus on your studies.",g:"intransitive verb + on; uncountable noun",sy:"concentrate, center, target",an:"distract, scatter",f:1},
+{w:"handle",p:"verb",vf:"handle / handled / handled",en:"/ˈhændl/",th:"แฮน-เดิล / แฮน-เดิลด์ / แฮน-เดิลด์",m:"จัดการ, รับมือ",c:"handle pressure, handle a complaint",u:"formal/informal",ex:"She handled the situation very well.",g:"transitive verb",sy:"manage, deal with, cope",an:"mishandle, neglect",f:1},
+{w:"ignore",p:"verb",vf:"ignore / ignored / ignored",en:"/ɪɡˈnɔːr/",th:"อิก-นอร์ / อิก-นอร์ด์ / อิก-นอร์ด์",m:"เพิกเฉย, ไม่สนใจ",c:"ignore a message, ignore advice",u:"formal/informal",ex:"Don't ignore the warning signs.",g:"transitive verb",sy:"disregard, overlook, dismiss",an:"notice, acknowledge",f:1},
+{w:"imagine",p:"verb",vf:"imagine / imagined / imagined",en:"/ɪˈmædʒɪn/",th:"อิ-แมจ-จิน / อิ-แมจ-จินด์ / อิ-แมจ-จินด์",m:"จินตนาการ, นึกภาพ",c:"imagine a scene, hard to imagine",u:"formal/informal",ex:"Imagine living without the internet.",g:"transitive verb + gerund/that-clause",sy:"envision, picture, suppose",an:"",f:1},
+{w:"introduce",p:"verb",vf:"introduce / introduced / introduced",en:"/ˌɪntrəˈduːs/",th:"อิน-ทระ-ดิวซ์ / อิน-ทระ-ดิวซ์ท์ / อิน-ทระ-ดิวซ์ท์",m:"แนะนำตัว, เปิดตัว",c:"introduce yourself, introduce a product",u:"formal/informal",ex:"Let me introduce you to my colleague.",g:"transitive verb",sy:"present, launch, unveil",an:"",f:1},
+{w:"invite",p:"verb",vf:"invite / invited / invited",en:"/ɪnˈvaɪt/",th:"อิน-ไวท์ / อิน-ไว-เท็ด / อิน-ไว-เท็ด",m:"เชิญ",c:"invite to a party, invite for dinner",u:"formal/informal",ex:"We invited all our friends to the wedding.",g:"transitive verb + to",sy:"ask, request, summon",an:"uninvite, exclude",f:1},
+{w:"mention",p:"verb",vf:"mention / mentioned / mentioned",en:"/ˈmɛnʃən/",th:"เมน-ชัน / เมน-ชันด์ / เมน-ชันด์",m:"กล่าวถึง, เอ่ยถึง",c:"mention a name, briefly mention",u:"formal/informal",ex:"She mentioned your name in the meeting.",g:"transitive verb",sy:"refer to, cite, note",an:"omit, ignore",f:1},
+{w:"notice",p:"verb/noun",vf:"notice / noticed / noticed",en:"/ˈnoʊtɪs/",th:"โน-ทิส / โน-ทิสท์ / โน-ทิสท์",m:"สังเกต, ประกาศ",c:"notice a change, two weeks' notice",u:"formal/informal",ex:"Did you notice anything strange?",g:"transitive verb; countable/uncountable noun",sy:"observe, see, spot",an:"miss, overlook",f:1},
+{w:"predict",p:"verb",vf:"predict / predicted / predicted",en:"/prɪˈdɪkt/",th:"พริ-ดิคท์ / พริ-ดิค-เท็ด / พริ-ดิค-เท็ด",m:"ทำนาย, คาดการณ์",c:"predict the future, predict results",u:"formal",ex:"Experts predict a rise in prices.",g:"transitive verb",sy:"forecast, foresee, anticipate",an:"",f:1},
+{w:"protect",p:"verb",vf:"protect / protected / protected",en:"/prəˈtɛkt/",th:"พระ-เท็คท์ / พระ-เท็ค-เท็ด / พระ-เท็ค-เท็ด",m:"ปกป้อง, คุ้มครอง",c:"protect data, protect the environment",u:"formal/informal",ex:"We must protect our privacy online.",g:"transitive verb + from/against",sy:"defend, guard, shield",an:"harm, expose",f:1},
+{w:"realize",p:"verb",vf:"realize / realized / realized",en:"/ˈriːəlaɪz/",th:"เรียล-ไลซ์ / เรียล-ไลซ์ด์ / เรียล-ไลซ์ด์",m:"ตระหนัก, รู้ตัว",c:"realize a mistake, realize the truth",u:"formal/informal",ex:"I didn't realize how late it was.",g:"transitive verb",sy:"understand, recognize, grasp",an:"miss, overlook",f:1},
+{w:"recommend",p:"verb",vf:"recommend / recommended / recommended",en:"/ˌrɛkəˈmɛnd/",th:"เรค-คอ-เมนด์ / เรค-คอ-เมน-เด็ด / เรค-คอ-เมน-เด็ด",m:"แนะนำ",c:"recommend a book, highly recommend",u:"formal/informal",ex:"I recommend this restaurant to everyone.",g:"transitive verb",sy:"suggest, advise, endorse",an:"discourage, oppose",f:1},
+{w:"reduce",p:"verb",vf:"reduce / reduced / reduced",en:"/rɪˈduːs/",th:"ริ-ดิวซ์ / ริ-ดิวซ์ท์ / ริ-ดิวซ์ท์",m:"ลด, ทำให้น้อยลง",c:"reduce costs, reduce stress",u:"formal/informal",ex:"We need to reduce expenses this month.",g:"transitive/intransitive verb",sy:"decrease, lower, cut",an:"increase, raise",f:1},
+{w:"refuse",p:"verb",vf:"refuse / refused / refused",en:"/rɪˈfjuːz/",th:"ริ-ฟิวซ์ / ริ-ฟิวซ์ด์ / ริ-ฟิวซ์ด์",m:"ปฏิเสธ",c:"refuse an offer, refuse to answer",u:"formal/informal",ex:"He refused to sign the contract.",g:"transitive verb + to-infinitive",sy:"decline, reject, deny",an:"accept, agree",f:1},
+{w:"remind",p:"verb",vf:"remind / reminded / reminded",en:"/rɪˈmaɪnd/",th:"ริ-ไมนด์ / ริ-ไมน์-เด็ด / ริ-ไมน์-เด็ด",m:"เตือน, ทำให้นึกถึง",c:"remind someone, remind me to call",u:"formal/informal",ex:"Please remind me to send the email.",g:"transitive verb + of/to-infinitive",sy:"prompt, alert, recall",an:"forget",f:1},
+{w:"share",p:"verb/noun",vf:"share / shared / shared",en:"/ʃɛər/",th:"แชร์ / แชร์ด์ / แชร์ด์",m:"แบ่งปัน, หุ้น",c:"share information, share a meal",u:"formal/informal",ex:"She shared her ideas with the team.",g:"transitive verb; countable noun",sy:"divide, distribute, contribute",an:"keep, withhold",f:1},
+{w:"attention",p:"noun",vf:"",en:"/əˈtɛnʃən/",th:"อะ-เทน-ชัน",m:"ความสนใจ, ความตั้งใจ",c:"pay attention, draw attention",u:"formal/informal",ex:"Please pay attention to the instructions.",g:"uncountable noun",sy:"focus, awareness, notice",an:"inattention, distraction",f:1},
+{w:"business",p:"noun",vf:"",en:"/ˈbɪznəs/",th:"บิซ-เนส",m:"ธุรกิจ, งาน",c:"start a business, business meeting",u:"formal/informal",ex:"She runs a small business in town.",g:"countable/uncountable noun",sy:"trade, company, enterprise",an:"",f:1},
+{w:"customer",p:"noun",vf:"",en:"/ˈkʌstəmər/",th:"คัส-ทอ-เมอร์",m:"ลูกค้า",c:"loyal customer, customer service",u:"formal/informal",ex:"The customer is always right.",g:"countable noun",sy:"client, buyer, consumer",an:"seller, vendor",f:1},
+{w:"example",p:"noun",vf:"",en:"/ɪɡˈzæmpəl/",th:"อิก-แซม-เพิล",m:"ตัวอย่าง",c:"good example, for example",u:"formal/informal",ex:"Can you give me an example?",g:"countable noun",sy:"instance, sample, illustration",an:"",f:1},
+{w:"future",p:"noun/adjective",vf:"",en:"/ˈfjuːtʃər/",th:"ฟิว-เชอร์",m:"อนาคต, ในอนาคต",c:"bright future, future plans",u:"formal/informal",ex:"What are your plans for the future?",g:"countable noun; attributive adjective",sy:"tomorrow, prospect, outlook",an:"past, history",f:1},
+{w:"health",p:"noun",vf:"",en:"/hɛlθ/",th:"เฮลธ์",m:"สุขภาพ",c:"good health, health insurance",u:"formal/informal",ex:"Exercise is good for your health.",g:"uncountable noun",sy:"wellness, fitness, well-being",an:"illness, sickness",f:1},
+{w:"idea",p:"noun",vf:"",en:"/aɪˈdiːə/",th:"ไอ-เดีย",m:"ความคิด, ไอเดีย",c:"good idea, share an idea",u:"formal/informal",ex:"That's a great idea!",g:"countable noun",sy:"thought, concept, notion",an:"",f:1},
+{w:"team",p:"noun",vf:"",en:"/tiːm/",th:"ทีม",m:"ทีม, คณะ",c:"team player, work as a team",u:"formal/informal",ex:"Our team won the match.",g:"countable noun (often collective)",sy:"group, crew, squad",an:"",f:1},
+{w:"amazing",p:"adjective",vf:"",en:"/əˈmeɪzɪŋ/",th:"อะ-เมซ-ซิง",m:"น่าทึ่ง, น่าอัศจรรย์",c:"amazing view, amazing experience",u:"informal",ex:"The view from the top is amazing.",g:"attributive/predicate adjective",sy:"incredible, astonishing, wonderful",an:"ordinary, dull",f:1},
+{w:"common",p:"adjective",vf:"",en:"/ˈkɒmən/",th:"คอม-มอน",m:"ทั่วไป, ที่พบบ่อย",c:"common problem, common sense",u:"formal/informal",ex:"It's a common mistake.",g:"attributive/predicate adjective",sy:"usual, frequent, ordinary",an:"rare, unusual",f:1},
+{w:"comfortable",p:"adjective",vf:"",en:"/ˈkʌmftərbəl/",th:"คัมฟ์-เทอะ-เบิล",m:"สบาย, รู้สึกสบาย",c:"comfortable chair, feel comfortable",u:"formal/informal",ex:"This sofa is very comfortable.",g:"attributive/predicate adjective",sy:"cozy, relaxed, at ease",an:"uncomfortable, awkward",f:1},
+{w:"famous",p:"adjective",vf:"",en:"/ˈfeɪməs/",th:"เฟ-มัส",m:"มีชื่อเสียง, โด่งดัง",c:"famous actor, famous for",u:"formal/informal",ex:"She is famous for her novels.",g:"attributive/predicate adjective + for",sy:"well-known, celebrated, renowned",an:"unknown, obscure",f:1},
+{w:"modern",p:"adjective",vf:"",en:"/ˈmɒdərn/",th:"มอ-เดิร์น",m:"ทันสมัย, สมัยใหม่",c:"modern technology, modern style",u:"formal/informal",ex:"They live in a modern apartment.",g:"attributive adjective",sy:"contemporary, current, up-to-date",an:"old, ancient, outdated",f:1},
+{w:"quick",p:"adjective",vf:"",en:"/kwɪk/",th:"ควิค",m:"รวดเร็ว, ไว",c:"quick answer, quick decision",u:"formal/informal",ex:"She gave me a quick reply.",g:"attributive/predicate adjective",sy:"fast, rapid, swift",an:"slow, sluggish",f:1},
+{w:"strong",p:"adjective",vf:"",en:"/strɒŋ/",th:"สตรอง",m:"แข็งแรง, มีพลัง",c:"strong leader, strong coffee",u:"formal/informal",ex:"He is a strong swimmer.",g:"attributive/predicate adjective",sy:"powerful, tough, firm",an:"weak, fragile",f:1},
 ]; // end DB
 
 const DB_MAP = {};
@@ -827,13 +908,34 @@ async function addToStudyByRemark(remark) {
 }
 
 // ── REMARK ────────────────────────────────────────────────────────
+let bulkRemarkMode = false;
 function openRemarkModal(id) {
+  bulkRemarkMode = false;
   remarkTargetId = id;
   const w = allWords.find(x => x.id === id);
   document.getElementById('remark-word-label').textContent = `Remark: "${w?.word}"`;
   document.getElementById('modal-remark').classList.add('open');
 }
+function openBulkRemarkModal() {
+  if (!selectedIds.size) { toast('No words selected'); return; }
+  bulkRemarkMode = true;
+  remarkTargetId = null;
+  document.getElementById('remark-word-label').textContent = `Set Remark for ${selectedIds.size} word(s)`;
+  document.getElementById('modal-remark').classList.add('open');
+}
 async function setRemark(r) {
+  if (bulkRemarkMode) {
+    const ids = [...selectedIds];
+    closeModal('modal-remark');
+    localOp = true; showLoading(true, 'Updating remarks...');
+    allWords.forEach(w => { if (selectedIds.has(w.id)) w.remark = r; });
+    await sb.from('words').update({ remark: r }).in('id', ids);
+    showLoading(false); localOp = false;
+    bulkRemarkMode = false;
+    renderAll(); updateStats();
+    toast(`🏷️ Remark applied to ${ids.length} word(s)`);
+    return;
+  }
   const w = allWords.find(x => x.id === remarkTargetId);
   if (w) {
     localOp = true; w.remark = r;
@@ -841,7 +943,9 @@ async function setRemark(r) {
     localOp = false; renderAll(); updateStats();
   }
   closeModal('modal-remark');
+  remarkTargetId = null;
 }
+function openInfoModal() { document.getElementById('modal-info').classList.add('open'); }
 
 // ── GENERATE ──────────────────────────────────────────────────────
 function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
